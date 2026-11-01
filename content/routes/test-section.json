@@ -1,0 +1,56 @@
+{
+  "id": "test-section",
+  "name": "Training Ground test section",
+  "fictional": true,
+  "note": "Original fictional training section, ~4.2 km.",
+  "startChainageM": 0,
+  "segments": [
+    { "type": "straight", "lengthM": 1200 },
+    { "type": "curve", "lengthM": 600, "radiusM": 1000, "turn": "left" },
+    { "type": "straight", "lengthM": 1000 },
+    { "type": "curve", "lengthM": 400, "radiusM": 1500, "turn": "right" },
+    { "type": "straight", "lengthM": 1000 }
+  ],
+  "gradients": [
+    { "fromM": 0, "grade": 0 },
+    { "fromM": 1400, "grade": 0.005 },
+    { "fromM": 2400, "grade": 0 },
+    { "fromM": 3000, "grade": -0.004 },
+    { "fromM": 3500, "grade": 0 }
+  ],
+  "speedLimits": [
+    { "fromM": 0, "toM": 4200, "kmh": 110, "kind": "permanent" },
+    { "fromM": 1500, "toM": 1900, "kmh": 50, "kind": "temporary" }
+  ],
+  "stations": [
+    {
+      "id": "PRS",
+      "name": "Prashikshan Nagar",
+      "localName": "प्रशिक्षण नगर",
+      "stopMarkM": 3900,
+      "platformLengthM": 450
+    }
+  ],
+  "signals": [
+    {
+      "id": "D1",
+      "label": "Distant D1",
+      "kind": "distant",
+      "chainageM": 2100,
+      "timeline": [
+        { "atS": 0, "aspect": "YELLOW" },
+        { "atS": 150, "aspect": "GREEN" }
+      ]
+    },
+    {
+      "id": "H1",
+      "label": "Home H1",
+      "kind": "home",
+      "chainageM": 3000,
+      "timeline": [
+        { "atS": 0, "aspect": "RED" },
+        { "atS": 150, "aspect": "YELLOW" }
+      ]
+    }
+  ]
+}

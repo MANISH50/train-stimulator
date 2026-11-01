@@ -1,0 +1,16 @@
+{
+  "id": "coach-12",
+  "name": "12-coach passenger rake (generic LHB-type)",
+  "vehicles": 12,
+  "vehicleMassT": 46,
+  "vehicleLengthM": 24,
+  "resistance": { "a": 0.699, "b": 0.02153, "c": 0.0000835, "starting": 4 },
+  "rotatingMassFraction": 0.06,
+  "brakeForceRatio": 0.085,
+  "bcMax": 3.0,
+  "bcApplyTauS": 1.25,
+  "bcReleaseTauS": 4,
+  "brakeSignalSpeedMps": 150,
+  "source": "docs/research/02-train-physics.md (LHB coach ~41 t tare + ~5 t load, 24 m; LHB Davis; BC max 3.0; passenger BC timings)",
+  "note": "brakeForceRatio tuned to ~0.8 m/s² mean decel at max BC (research target 0.8-1.0 emergency). Service brake-signal speed 150 m/s is tuning within the research range (60-150). Load and tuning values UNVERIFIED."
+}
