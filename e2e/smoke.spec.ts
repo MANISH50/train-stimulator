@@ -5,21 +5,24 @@ test('loads, renders and drives', async ({ page }) => {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 
+  test.setTimeout(120_000);
   await page.goto('/');
+  await page.locator('[data-quality="low"]').click();
   await page.getByRole('button', { name: 'Play' }).click();
   await expect(page.locator('#scene')).toBeVisible();
-  await expect(page.locator('[data-k="sigName"]')).toHaveText('Distant D1');
+  await expect(page.locator('[data-k="sigName"]')).toHaveText('Automatic A1');
 
-  // Release the loco brake (hold ;), then notch up twice.
+  // Release the loco brake (hold ; until the HUD shows 0%), then notch up twice.
+  // Software rendering in CI can be slow, so wait on the handle rather than a fixed time.
   await page.keyboard.down('Semicolon');
-  await page.waitForTimeout(2200);
+  await expect(page.locator('[data-k="indep"]')).toHaveText('0%', { timeout: 60_000 });
   await page.keyboard.up('Semicolon');
   await page.keyboard.press('KeyW');
   await page.keyboard.press('KeyW');
   await expect(page.locator('[data-k="notch"]')).toHaveText('2/8');
   await expect
     .poll(async () => Number(await page.locator('[data-k="speed"]').textContent()), {
-      timeout: 20_000,
+      timeout: 60_000,
     })
     .toBeGreaterThan(0);
 
@@ -94,5 +97,29 @@ test('horn blasts are recognised as whistle codes', async ({ page }) => {
     await page.waitForTimeout(300);
   }
   await expect(toast).toContainText('Horn code: two short', { timeout: 5_000 });
+  expect(errors).toEqual([]);
+});
+
+test('every level and weather loads from the menu without errors', async ({ page }) => {
+  test.setTimeout(240_000); // five world rebuilds under software rendering
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.goto('/');
+  const levels = ['training', 'intercity', 'suburban', 'mail', 'goods'];
+  const weathers = ['clear', 'haze', 'rain', 'fog', 'night'];
+  for (let i = 0; i < levels.length; i++) {
+    await page.locator(`[data-level="${levels[i]}"]`).click();
+    await page.locator(`[data-weather="${weathers[i]}"]`).click();
+    await page.locator('.menu [data-action="play"]').click();
+    await expect.poll(() => page.evaluate(() => window.__game?.level)).toBe(levels[i]);
+    await expect
+      .poll(() => page.evaluate(() => window.__game?.sim.weatherId))
+      .toBe(weathers[i]);
+    await expect(page.locator('[data-k="sigName"]')).not.toHaveText('—');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
+  }
   expect(errors).toEqual([]);
 });

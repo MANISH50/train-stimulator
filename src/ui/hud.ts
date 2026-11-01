@@ -3,7 +3,7 @@ import type { CameraMode } from '../render/scene';
 import type { SimEvent } from '../sim/events';
 import { BP_CHARGED } from '../sim/physics/brakes';
 import type { Sim } from '../sim/sim';
-import { ASPECT_MEANING, aspectAt, nextSignal } from '../sim/signalling/signal';
+import { ASPECT_MEANING } from '../sim/signalling/signal';
 import './hud.css';
 
 /** Sim clock starts at a fictional 06:00 departure. */
@@ -28,6 +28,9 @@ export class Hud {
   private readonly el: Record<string, HTMLElement> = {};
   private lastUpdate = -1;
   private toastTimer = 0;
+  private bannerTimer = 0;
+  /** Called for important notifications (e.g. a chime from the audio system). */
+  onNotify: () => void = () => {};
 
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `
@@ -75,6 +78,7 @@ export class Hud {
         <span><kbd>K</kbd> hide hints</span>
       </div>
       <div class="toast" data-k="toast" role="status"></div>
+      <div class="banner" data-k="banner" role="alert"><b data-k="bannerTitle"></b><span data-k="bannerText"></span></div>
       <div class="perf" data-k="perf" hidden></div>
       <div class="overlay" data-k="overlay" hidden></div>
       <div class="overlay help" data-k="help" hidden></div>
@@ -83,7 +87,7 @@ export class Hud {
     this.el['help']!.innerHTML = this.helpHtml();
   }
 
-  update(sim: Sim, frontS: number, realTimeS: number): void {
+  update(sim: Sim, _frontS: number, realTimeS: number): void {
     // ~15 Hz DOM updates keep layout cost low.
     if (realTimeS - this.lastUpdate < 1 / 15) return;
     this.lastUpdate = realTimeS;
@@ -107,30 +111,47 @@ export class Hud {
     this.el['slip']!.classList.toggle('on', t.wheelSlip);
     this.el['emerg']!.classList.toggle('on', c.emergency);
 
-    const sig = nextSignal(sim.setup.route.signals, frontS);
-    if (sig) {
-      const aspect = aspectAt(sig, sim.timeS);
-      const dist = sig.chainageM - frontS;
-      this.set('sigName', sig.label);
-      this.set('sigMeaning', `${aspect.replace('_', ' ')} — ${ASPECT_MEANING[aspect]}`);
-      this.set('sigDist', dist > 1000 ? `${(dist / 1000).toFixed(2)} km` : `${dist.toFixed(0)} m`);
-      const [l1, l2] = [this.el['lamp1']!, this.el['lamp2']!];
-      l1.className = `lamp ${aspect === 'RED' ? 'r' : aspect === 'GREEN' ? 'g' : 'y'}`;
-      l2.className = `lamp ${aspect === 'DOUBLE_YELLOW' ? 'y' : 'off'}`;
+    const view = sim.nextSignalView();
+    const [l1, l2] = [this.el['lamp1']!, this.el['lamp2']!];
+    if (view) {
+      const { def, aspect, distM, visible } = view;
+      this.set('sigName', def.label);
+      this.set(
+        'sigDist',
+        distM > 1000 ? `${(distM / 1000).toFixed(2)} km` : `${distM.toFixed(0)} m`,
+      );
+      if (visible) {
+        this.set('sigMeaning', `${aspect.replace('_', ' ')} — ${ASPECT_MEANING[aspect]}`);
+        l1.className = `lamp ${aspect === 'RED' ? 'r' : aspect === 'GREEN' ? 'g' : 'y'}`;
+        l2.className = `lamp ${aspect === 'DOUBLE_YELLOW' ? 'y' : 'off'}`;
+      } else {
+        // Fog: like a fog safety device, the distance is known but not the colour.
+        this.set('sigMeaning', 'Not in sight yet — be ready to stop');
+        l1.className = 'lamp off';
+        l2.className = 'lamp off';
+      }
     } else {
       this.set('sigName', 'No signal ahead');
       this.set('sigMeaning', '');
       this.set('sigDist', '');
-      this.el['lamp1']!.className = 'lamp off';
-      this.el['lamp2']!.className = 'lamp off';
+      l1.className = 'lamp off';
+      l2.className = 'lamp off';
     }
 
     this.set('clock', formatClock(CLOCK_START_S + sim.timeS));
-    const st = sim.setup.route.stations.find((s) => s.stopMarkM > frontS - 30);
-    this.set(
-      'next',
-      st ? `Next stop: ${st.name} in ${Math.max(0, st.stopMarkM - frontS).toFixed(0)} m` : '',
-    );
+    const next = sim.playerNextStop();
+    if (next) {
+      const due = next.stop.dueS;
+      const eta = due !== undefined ? ` · due ${formatClock(CLOCK_START_S + due).slice(0, 5)}` : '';
+      const late =
+        due !== undefined && sim.timeS > due ? ` (late ${formatMinSec(sim.timeS - due)})` : '';
+      this.set(
+        'next',
+        `Next stop: ${next.station.name} in ${Math.max(0, next.distM).toFixed(0)} m${eta}${late}`,
+      );
+    } else {
+      this.set('next', `${sim.player.label} · no more booked stops`);
+    }
     this.set('hint', this.hint(sim));
   }
 
@@ -149,19 +170,59 @@ export class Hud {
         case 'SIGNAL_PASSED':
           this.toast(`Passed ${e.signalId} at ${e.aspect.replace('_', ' ')}`, 'info');
           break;
+        case 'SIGNAL_CLEARED':
+          if (e.stopped) {
+            this.banner(
+              `${e.label} is now ${e.aspect.replace('_', ' ')} — you may start`,
+              'Sound one long horn (hold H), release the brakes and open the throttle.',
+              'good',
+            );
+          } else {
+            this.toast(`${e.label} cleared to ${e.aspect.replace('_', ' ')}`, 'good');
+          }
+          break;
+        case 'ROUTED_LOOP':
+          this.banner(
+            `Routed into the ${e.stationName} loop`,
+            e.forTrain
+              ? `The ${e.forTrain} behind you has priority. Slow to 30 km/h, stop at the loop starter and wait for it to pass.`
+              : 'Slow to 30 km/h and stop at the loop starter.',
+            'warn',
+          );
+          break;
+        case 'TRAIN_HELD_FOR_YOU':
+          this.toast(
+            `${e.trainLabel} is held in the ${e.stationName} loop so you can overtake`,
+            'info',
+          );
+          break;
+        case 'TRAIN_PASSING':
+          this.toast(
+            e.sameDirection
+              ? `${e.trainLabel} overtaking on the main line`
+              : `${e.trainLabel} passing on the down line`,
+            'info',
+          );
+          break;
         case 'STATION_STOP': {
           const off = e.offsetM;
           const where =
             Math.abs(off) < 2
               ? 'right on the mark'
               : `${Math.abs(off).toFixed(1)} m ${off > 0 ? 'past' : 'short of'} the mark`;
-          this.toast(`Stopped at platform — ${where}`, Math.abs(off) < 5 ? 'good' : 'info');
+          const time =
+            e.lateS === undefined
+              ? ''
+              : e.lateS > 30
+                ? ` · ${formatMinSec(e.lateS)} late`
+                : ' · on time';
+          this.toast(`Stopped at platform — ${where}${time}`, Math.abs(off) < 5 ? 'good' : 'info');
           break;
         }
         case 'END_OF_TRACK':
           this.showOverlay(
-            'End of test section',
-            'You ran out of track. Stop at the platform mark next time.',
+            'Journey complete',
+            `You reached the end of the line at ${formatClock(CLOCK_START_S + sim.timeS)}.`,
             '',
           );
           break;
@@ -177,6 +238,17 @@ export class Hud {
     t.className = `toast show ${kind}`;
     clearTimeout(this.toastTimer);
     this.toastTimer = window.setTimeout(() => (t.className = 'toast'), 3500);
+  }
+
+  /** Large, longer-lived notification for things the driver must act on. */
+  banner(title: string, text: string, kind: 'info' | 'warn' | 'good'): void {
+    const b = this.el['banner']!;
+    this.el['bannerTitle']!.textContent = title;
+    this.el['bannerText']!.textContent = text;
+    b.className = `banner show ${kind}`;
+    clearTimeout(this.bannerTimer);
+    this.bannerTimer = window.setTimeout(() => (b.className = 'banner'), 7000);
+    this.onNotify();
   }
 
   showPerf(on: boolean): void {
@@ -261,6 +333,19 @@ export class Hud {
   private hint(sim: Sim): string {
     const c = sim.controls;
     if (sim.status !== 'running') return '';
+    const hold = sim.playerHold();
+    if (hold?.kind === 'overtake') return `Held: wait for the ${hold.byTrain} to pass`;
+    if (hold?.kind === 'dwell')
+      return `Dwell at platform: ${Math.ceil(hold.leftS)} s — then wait for the starter`;
+    if (hold?.kind === 'not-at-mark') return 'Draw up to the STOP mark to start your dwell';
+    const view = sim.nextSignalView();
+    const loop = sim.net.loops.find(
+      (l) => sim.player.loopRoutes.has(l.stationId) && l.fromM > sim.train.s,
+    );
+    if (loop) return `Routed into the loop ahead: 30 km/h, stop at the loop starter`;
+    if (sim.train.v === 0 && view && view.aspect === 'RED' && view.distM < 400) {
+      return `Wait at ${view.def.label} until it clears`;
+    }
     if (sim.train.v !== 0) return '';
     if (c.emergency) return 'Emergency applied — press Backspace to reset';
     if (c.reverser === 0) return 'Set the reverser to F (R)';
@@ -286,6 +371,11 @@ export class Hud {
     const n = this.el[key]!;
     if (n.textContent !== text) n.textContent = text;
   }
+}
+
+function formatMinSec(totalS: number): string {
+  const s = Math.max(0, Math.round(totalS));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 function formatClock(totalS: number): string {

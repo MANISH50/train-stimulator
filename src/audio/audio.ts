@@ -63,6 +63,26 @@ export class TrainAudio {
     this.horn.setInCab(this.inCab);
   }
 
+  /** Two-note cab alert chime for important notifications. */
+  chime(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    [880, 1320].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      const g = ctx.createGain();
+      const t0 = t + i * 0.16;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+      o.connect(g).connect(this.master);
+      o.start(t0);
+      o.stop(t0 + 0.4);
+    });
+  }
+
   setInCab(inCab: boolean): void {
     this.inCab = inCab;
     this.horn?.setInCab(inCab);

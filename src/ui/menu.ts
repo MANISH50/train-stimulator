@@ -1,60 +1,18 @@
-// Start menu: choose a journey, starting camera and graphics quality, then press Play.
+// Start menu: choose a level, weather, starting camera and graphics quality, then Play.
 import type { CameraMode } from '../render/scene';
 import type { QualityName } from '../render/quality';
 import { ACTION_LABELS, DEFAULT_KEYMAP, keyLabel, type Action } from '../input/keymap';
+import { LEVELS, trainType } from '../content/catalog';
+import type { WeatherId } from '../sim/types';
+import { WEATHER, WEATHER_ORDER } from '../sim/weather';
 import './menu.css';
 
 export interface MenuChoice {
-  journey: string;
+  levelId: string;
   camera: CameraMode;
   quality: QualityName;
+  weather: WeatherId;
 }
-
-interface Journey {
-  id: string;
-  title: string;
-  subtitle: string;
-  detail: string;
-  available: boolean;
-}
-
-const JOURNEYS: Journey[] = [
-  {
-    id: 'training',
-    title: 'Training Ground',
-    subtitle: 'Electric passenger · 12 coaches',
-    detail: '4.2 km test section: signals, a 50 km/h restriction and a platform stop.',
-    available: true,
-  },
-  {
-    id: 'intercity',
-    title: 'Intercity Express',
-    subtitle: 'High speed · few stops',
-    detail: 'Long runs with strict punctuality.',
-    available: false,
-  },
-  {
-    id: 'suburban',
-    title: 'Suburban Local',
-    subtitle: 'Frequent stops · peak traffic',
-    detail: 'Short gaps and precise platform stopping.',
-    available: false,
-  },
-  {
-    id: 'mail',
-    title: 'Mail / Passenger',
-    subtitle: 'Mixed stops · varied terrain',
-    detail: 'Moderate priority across changing gradients.',
-    available: false,
-  },
-  {
-    id: 'goods',
-    title: 'Goods Train',
-    subtitle: 'Heavy freight · long braking',
-    detail: 'Slow acceleration and frequent holds.',
-    available: false,
-  },
-];
 
 const CAMERAS: { id: CameraMode; label: string }[] = [
   { id: 'cab', label: 'Cab (pilot view)' },
@@ -92,7 +50,8 @@ export class StartMenu {
   private showHelp = false;
 
   constructor(parent: HTMLElement, quality: QualityName) {
-    this.choice = { journey: 'training', camera: 'cab', quality };
+    const first = LEVELS[0]!;
+    this.choice = { levelId: first.id, camera: 'cab', quality, weather: first.defaultWeather };
     this.el = document.createElement('div');
     this.el.className = 'menu';
     this.el.setAttribute('role', 'dialog');
@@ -129,16 +88,20 @@ export class StartMenu {
           <div class="brand">Indian Train <span>Loco Pilot Simulator</span></div>
           <p class="tag">Drive by the signals. Reach every station on time and safely.</p>
         </header>
-        <h3>Choose your journey</h3>
+        <h3>Choose your journey — all levels unlocked</h3>
         <div class="journeys">
-          ${JOURNEYS.map(
-            (j) => `
-            <button class="journey ${j.id === c.journey ? 'selected' : ''}" data-journey="${j.id}" ${j.available ? '' : 'disabled'}>
-              <b>${j.title}</b><small>${j.subtitle}</small><span>${j.detail}</span>
-              ${j.available ? '' : '<em>Coming soon</em>'}
-            </button>`,
-          ).join('')}
+          ${LEVELS.map((l) => {
+            const t = trainType(l.player.trainTypeId);
+            return `
+            <button class="journey ${l.id === c.levelId ? 'selected' : ''}" data-level="${l.id}">
+              <b>${l.order}. ${l.title}</b><small>${l.subtitle}</small><span>${l.detail}</span>
+              <em>${t.name}: ${t.speciality}</em>
+            </button>`;
+          }).join('')}
         </div>
+        <h3>Weather</h3>
+        <div class="seg">${WEATHER_ORDER.map((w) => `<button data-weather="${w}" class="${w === c.weather ? 'on' : ''}" title="${WEATHER[w].description}">${WEATHER[w].label}</button>`).join('')}</div>
+        <p class="weatherNote">${WEATHER[c.weather].description}</p>
         <div class="options">
           <div>
             <h3>Starting camera</h3>
@@ -160,9 +123,17 @@ export class StartMenu {
         <p class="fine">Unofficial game, not affiliated with Indian Railways. You can change the camera any time with the buttons at the top right or keys 1–4.</p>
       </div>`;
 
-    this.el.querySelectorAll<HTMLButtonElement>('[data-journey]').forEach((b) =>
+    this.el.querySelectorAll<HTMLButtonElement>('[data-level]').forEach((b) =>
       b.addEventListener('click', () => {
-        this.choice.journey = b.dataset['journey']!;
+        const level = LEVELS.find((l) => l.id === b.dataset['level'])!;
+        this.choice.levelId = level.id;
+        this.choice.weather = level.defaultWeather;
+        this.render();
+      }),
+    );
+    this.el.querySelectorAll<HTMLButtonElement>('[data-weather]').forEach((b) =>
+      b.addEventListener('click', () => {
+        this.choice.weather = b.dataset['weather'] as WeatherId;
         this.render();
       }),
     );

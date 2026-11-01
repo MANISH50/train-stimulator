@@ -1,28 +1,26 @@
-// Headless performance smoke test: 10k fixed steps of the full sim must stay under budget.
-import loco from '../content/locos/e-class.json';
-import rake from '../content/rakes/coach-12.json';
-import route from '../content/routes/test-section.json';
-import { parseLoco, parseRake, parseRoute } from '../src/content/schema';
+// Headless performance smoke test: 10k fixed steps of every level, with AI traffic,
+// signalling and the dispatcher running, must each stay under budget.
+import { LEVELS, levelSetup } from '../src/content/catalog';
 import { Sim } from '../src/sim/sim';
+import { autopilot } from '../tests/autopilot';
 
-const BUDGET_MS = 250;
+const BUDGET_MS = 400;
 const STEPS = 10_000;
-const sim = new Sim({
-  route: parseRoute(route),
-  loco: parseLoco(loco),
-  rake: parseRake(rake),
-  startS: 360,
-});
-sim.controls.indepBrake = 0;
-sim.controls.notch = 4;
-const t0 = performance.now();
-for (let i = 0; i < STEPS; i++) {
-  if (sim.status !== 'running') break;
-  sim.step();
-  sim.drainEvents();
+let failed = false;
+for (const level of LEVELS) {
+  const sim = new Sim(levelSetup(level, 'clear'));
+  const t0 = performance.now();
+  for (let i = 0; i < STEPS && sim.status === 'running'; i++) {
+    autopilot(sim);
+    sim.step();
+    sim.drainEvents();
+  }
+  const ms = performance.now() - t0;
+  const ok = ms <= BUDGET_MS;
+  failed ||= !ok;
+  console.log(
+    `${ok ? 'ok  ' : 'SLOW'} ${level.id.padEnd(10)} ${STEPS} steps in ${ms.toFixed(0)} ms ` +
+      `(${((ms / STEPS) * 1000).toFixed(1)} µs/step, budget ${BUDGET_MS} ms)`,
+  );
 }
-const ms = performance.now() - t0;
-console.log(
-  `${STEPS} sim steps in ${ms.toFixed(1)} ms (${((ms / STEPS) * 1000).toFixed(1)} µs/step, budget ${BUDGET_MS} ms)`,
-);
-process.exit(ms <= BUDGET_MS ? 0 : 1);
+process.exit(failed ? 1 : 0);

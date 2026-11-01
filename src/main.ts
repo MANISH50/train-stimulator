@@ -1,28 +1,27 @@
-import locoJson from '../content/locos/e-class.json';
-import rakeJson from '../content/rakes/coach-12.json';
-import routeJson from '../content/routes/test-section.json';
 import { TrainAudio } from './audio/audio';
-import { parseLoco, parseRake, parseRoute } from './content/schema';
+import { LEVELS, levelById, levelSetup, trainType } from './content/catalog';
 import { Input } from './input/input';
 import { PRESETS, QUALITY_ORDER, detectQuality } from './render/quality';
 import { HornCodeDetector } from './input/hornCodes';
 import { CAMERA_NAMES, GameRenderer, type CameraMode } from './render/scene';
 import { FixedClock } from './sim/clock';
-import { Sim, type SimSetup } from './sim/sim';
+import { Sim } from './sim/sim';
+import type { LevelDef, WeatherId } from './sim/types';
 import { Hud } from './ui/hud';
 import { StartMenu } from './ui/menu';
 
-const setup: SimSetup = {
-  route: parseRoute(routeJson),
-  loco: parseLoco(locoJson),
-  rake: parseRake(rakeJson),
-  startS: 360,
-};
-
-let sim = new Sim(setup);
+let level: LevelDef = LEVELS[0]!;
+let weather: WeatherId = level.defaultWeather;
+let sim = new Sim(levelSetup(level, weather));
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
-const renderer = new GameRenderer(canvas, sim, detectQuality());
+const renderer = new GameRenderer(
+  canvas,
+  sim,
+  trainType(level.player.trainTypeId),
+  detectQuality(),
+);
 const hud = new Hud(document.getElementById('hud')!);
+hud.onNotify = () => audio.chime();
 const input = new Input(window);
 const audio = new TrainAudio();
 const clock = new FixedClock();
@@ -72,16 +71,22 @@ function closeMenu(): void {
 menu.onStart((choice, restartRequested) => {
   audio.start();
   if (choice.quality !== renderer.preset.name) renderer.applyPreset(PRESETS[choice.quality]);
-  if (restartRequested || sim.status !== 'running') restart();
+  const changed = choice.levelId !== level.id || choice.weather !== weather;
+  if (changed || restartRequested || sim.status !== 'running' || !started) {
+    level = levelById(choice.levelId);
+    weather = choice.weather;
+    restart();
+  }
   started = true;
   closeMenu();
   showCamera(renderer.setCamera(choice.camera));
 });
 hud.onCameraButtons((mode) => showCamera(renderer.setCamera(mode)), openMenu);
 
+/** Start (or restart) the current level: new sim, rebuilt world. */
 function restart(): void {
-  sim = new Sim(setup);
-  renderer.sim = sim;
+  sim = new Sim(levelSetup(level, weather));
+  renderer.setSim(sim, trainType(level.player.trainTypeId));
   prevS = sim.train.s;
   hud.hideOverlay();
 }
@@ -214,6 +219,7 @@ requestAnimationFrame(frame);
 declare global {
   interface Window {
     __game?: {
+      readonly level: string;
       readonly sim: Sim;
       readonly fps: number;
       readonly camera: string;
@@ -222,6 +228,9 @@ declare global {
   }
 }
 window.__game = {
+  get level() {
+    return level.id;
+  },
   get sim() {
     return sim;
   },

@@ -20,6 +20,15 @@ npm run dev
 
 Open http://localhost:5173 and press **F1** for the controls. The full key list is in `docs/CONTROLS.md`.
 
+## Levels (all unlocked)
+1. **Training Ground:** Mail Express. Wait at the red home, stop at the platform, and leave when the starter turns green.
+2. **Intercity Express:** Superfast. A slower passenger train is put into a loop so you can overtake.
+3. **Suburban Local:** 12-car EMU, four stations 1.5 km apart, with another EMU running ahead.
+4. **Mail / Passenger:** you are routed into the Sitapur loop and held until the Superfast behind you passes.
+5. **Goods Train:** about 4,700 t of freight on a 1 in 150 climb, looped at Ghatpur while a passenger train overtakes.
+
+Weather: clear, summer haze, monsoon rain (wet rail), winter fog (short signal sighting) or night.
+
 ## Phase 1: the Training Ground
 - A fictional 4.2 km section with curves and gradients, a temporary 50 km/h restriction, a distant signal, a home signal, and the Prashikshan Nagar platform.
 - Deterministic 60 Hz physics:

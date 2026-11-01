@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { RailNetwork } from '../sim/track/network';
 import { Track, newSample, type TrackSample } from '../sim/track/track';
 import { ballastTexture } from './textures';
 
@@ -13,9 +14,11 @@ const SLEEPER_SPACING_M = 0.65;
 const OHE_SPACING_M = 60;
 const STEP_M = 2;
 
+export type OffsetFn = (s: number) => number;
+
 const tmp = newSample();
 
-/** World position offset sideways from the centre-line (+right of travel direction). */
+/** World position offset sideways from the centre-line (+right of increasing chainage). */
 export function frameAt(
   track: Track,
   s: number,
@@ -32,23 +35,27 @@ export function headingAt(track: Track, s: number): number {
   return track.sample(s, tmp).heading;
 }
 
-/** Extrude a cross-section profile [side, up][] along the track into one mesh. */
+/** Extrude a cross-section profile [side, up][] along a line into one mesh. */
 function extrude(
   track: Track,
   profile: [number, number][],
   material: THREE.Material,
+  offset: OffsetFn,
+  fromM: number,
+  toM: number,
   uvScaleV = 1,
 ): THREE.Mesh {
-  const rows = Math.floor(track.length / STEP_M) + 1;
+  const rows = Math.max(2, Math.floor((toM - fromM) / STEP_M) + 1);
   const cols = profile.length;
   const pos = new Float32Array(rows * cols * 3);
   const uv = new Float32Array(rows * cols * 2);
   const v = new THREE.Vector3();
   for (let r = 0; r < rows; r++) {
-    const s = Math.min(track.length, r * STEP_M);
+    const s = Math.min(toM, fromM + r * STEP_M);
+    const off = offset(s);
     for (let c = 0; c < cols; c++) {
       const [side, up] = profile[c]!;
-      frameAt(track, s, side, up, v);
+      frameAt(track, s, side + off, up, v);
       const i = (r * cols + c) * 3;
       pos[i] = v.x;
       pos[i + 1] = v.y;
@@ -75,109 +82,142 @@ function extrude(
   return mesh;
 }
 
-export function buildTrack(track: Track): THREE.Group {
+export function buildTrack(track: Track, net: RailNetwork): THREE.Group {
   const group = new THREE.Group();
   group.name = 'track';
 
   const hb = BALLAST_BOTTOM_W / 2;
   const ht = BALLAST_TOP_W / 2;
   const ballastMat = new THREE.MeshStandardMaterial({ map: ballastTexture(), roughness: 1 });
-  group.add(
-    extrude(
-      track,
-      [
-        [-hb - 1.5, -0.05],
-        [-hb, 0],
-        [-ht, BALLAST_H],
-        [ht, BALLAST_H],
-        [hb, 0],
-        [hb + 1.5, -0.05],
-      ],
-      ballastMat,
-      2.5,
-    ),
-  );
-
   const railMat = new THREE.MeshStandardMaterial({
     color: 0x8c8f94,
     metalness: 0.85,
     roughness: 0.35,
   });
   const top = BALLAST_H + 0.18;
-  for (const sign of [-1, 1]) {
-    const x = (sign * GAUGE_M) / 2;
-    const w = RAIL_HEAD_W / 2;
-    group.add(
-      extrude(
-        track,
-        [
-          [x - w, top],
-          [x - w, top + RAIL_H],
-          [x + w, top + RAIL_H],
-          [x + w, top],
-        ],
-        railMat,
-      ),
-    );
-  }
+  const w = RAIL_HEAD_W / 2;
 
-  // Concrete sleepers, instanced.
-  const count = Math.floor(track.length / SLEEPER_SPACING_M);
-  const sleeper = new THREE.InstancedMesh(
+  let sleeperCount = 0;
+  for (const line of net.lines)
+    sleeperCount += Math.floor((line.toM - line.fromM) / SLEEPER_SPACING_M);
+  const sleepers = new THREE.InstancedMesh(
     new THREE.BoxGeometry(0.25, 0.2, 2.75),
     new THREE.MeshStandardMaterial({ color: 0xa39f96, roughness: 0.95 }),
-    count,
+    sleeperCount,
   );
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const scale = new THREE.Vector3(1, 1, 1);
   const p = new THREE.Vector3();
   const yAxis = new THREE.Vector3(0, 1, 0);
-  for (let i = 0; i < count; i++) {
-    const s = i * SLEEPER_SPACING_M;
-    frameAt(track, s, 0, BALLAST_H + 0.08, p);
-    q.setFromAxisAngle(yAxis, headingAt(track, s));
-    sleeper.setMatrixAt(i, m.compose(p, q, scale));
-  }
-  sleeper.receiveShadow = true;
-  group.add(sleeper);
+  let n = 0;
 
-  group.add(buildOhe(track));
+  for (const line of net.lines) {
+    const off: OffsetFn = (s) => net.offsetAt(line.id, s);
+    group.add(
+      extrude(
+        track,
+        [
+          [-hb - 1.5, -0.05],
+          [-hb, 0],
+          [-ht, BALLAST_H],
+          [ht, BALLAST_H],
+          [hb, 0],
+          [hb + 1.5, -0.05],
+        ],
+        ballastMat,
+        off,
+        line.fromM,
+        line.toM,
+        2.5,
+      ),
+    );
+    for (const sign of [-1, 1]) {
+      const x = (sign * GAUGE_M) / 2;
+      group.add(
+        extrude(
+          track,
+          [
+            [x - w, top],
+            [x - w, top + RAIL_H],
+            [x + w, top + RAIL_H],
+            [x + w, top],
+          ],
+          railMat,
+          off,
+          line.fromM,
+          line.toM,
+        ),
+      );
+    }
+    const count = Math.floor((line.toM - line.fromM) / SLEEPER_SPACING_M);
+    for (let i = 0; i < count; i++) {
+      const s = line.fromM + i * SLEEPER_SPACING_M;
+      frameAt(track, s, off(s), BALLAST_H + 0.08, p);
+      // Sleepers stay square to the line, including through a loop's diverging S-curve.
+      const slope = (off(s + 1) - off(s - 1)) / 2;
+      q.setFromAxisAngle(yAxis, headingAt(track, s) - Math.atan(slope));
+      sleepers.setMatrixAt(n++, m.compose(p, q, scale));
+    }
+  }
+  sleepers.receiveShadow = true;
+  group.add(sleepers);
+  group.add(buildOhe(track, net));
   return group;
 }
 
-/** Overhead equipment: masts with cantilevers and a contact wire (25 kV AC electrified look). */
-function buildOhe(track: Track): THREE.Group {
+/** Overhead equipment: masts outside the outermost lines, a contact wire over each line. */
+function buildOhe(track: Track, net: RailNetwork): THREE.Group {
   const g = new THREE.Group();
   const count = Math.floor(track.length / OHE_SPACING_M) + 1;
   const steel = new THREE.MeshStandardMaterial({ color: 0x5d6166, metalness: 0.6, roughness: 0.6 });
-  const mast = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 8.5, 0.3), steel, count);
-  const arm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 0.08, 4.2), steel, count);
+  const mast = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 8.5, 0.3), steel, count * 2);
+  const arm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 0.08, 1), steel, count * 2);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const one = new THREE.Vector3(1, 1, 1);
+  const armScale = new THREE.Vector3(1, 1, 1);
   const p = new THREE.Vector3();
   const yAxis = new THREE.Vector3(0, 1, 0);
+  let n = 0;
   for (let i = 0; i < count; i++) {
     const s = Math.min(track.length, i * OHE_SPACING_M);
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const line of net.lines) {
+      if (s < line.fromM || s > line.toM) continue;
+      const o = net.offsetAt(line.id, s);
+      lo = Math.min(lo, o);
+      hi = Math.max(hi, o);
+    }
     q.setFromAxisAngle(yAxis, headingAt(track, s));
-    frameAt(track, s, 3.6, 4.25, p);
-    mast.setMatrixAt(i, m.compose(p, q, one));
-    frameAt(track, s, 1.6, 7.6, p);
-    arm.setMatrixAt(i, m.compose(p, q, one));
+    const span = hi - lo;
+    for (const [mastSide, armCentre] of [
+      [lo - 3.4, lo - 3.4 + (span / 2 + 3.4) / 2],
+      [hi + 3.4, hi + 3.4 - (span / 2 + 3.4) / 2],
+    ] as const) {
+      frameAt(track, s, mastSide, 4.25, p);
+      mast.setMatrixAt(n, m.compose(p, q, one));
+      frameAt(track, s, armCentre, 7.6, p);
+      armScale.set(1, 1, span / 2 + 3.4);
+      arm.setMatrixAt(n, m.compose(p, q, armScale));
+      n++;
+    }
   }
   mast.castShadow = true;
   g.add(mast, arm);
 
-  const pts: THREE.Vector3[] = [];
-  for (let s = 0; s <= track.length; s += 10) pts.push(frameAt(track, s, 0, 6.2));
-  const wire = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(pts),
-    new THREE.LineBasicMaterial({ color: 0x2a2a2a }),
-  );
-  const catenary = wire.clone();
-  catenary.position.y = 1.1;
-  g.add(wire, catenary);
+  const wireMat = new THREE.LineBasicMaterial({ color: 0x2a2a2a });
+  for (const line of net.lines) {
+    const pts: THREE.Vector3[] = [];
+    for (let s = line.fromM; s <= line.toM; s += 10) {
+      pts.push(frameAt(track, s, net.offsetAt(line.id, s), 6.2));
+    }
+    const wire = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), wireMat);
+    const catenary = wire.clone();
+    catenary.position.y = 1.1;
+    g.add(wire, catenary);
+  }
   return g;
 }
 

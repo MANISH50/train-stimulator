@@ -199,7 +199,11 @@ export class Dispatcher implements RouteControl {
             stationId: g.station.id,
             leftS: Math.max(0, stop.dwellS - (timeS - stop.arrivedAtS)),
           });
-        } else if (train.speedMs <= 0.01 && aheadOf(train, mark) > STOP_WINDOW_M) {
+        } else if (
+          train.speedMs <= 0.01 &&
+          aheadOf(train, mark) > STOP_WINDOW_M &&
+          aheadOf(train, mark) < g.station.platformLengthM
+        ) {
           this.reason(train, { kind: 'not-at-mark', stationId: g.station.id });
         }
       }

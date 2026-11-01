@@ -63,13 +63,24 @@ export function ballastTexture(): THREE.CanvasTexture {
 }
 
 /** Coach side: window band plus an original two-tone livery. */
-export function coachSideTexture(): THREE.CanvasTexture {
+/** Livery colours (original schemes); defaults are the Training Ground teal and sand. */
+export interface LiveryColours {
+  body: string;
+  stripe: string;
+  roof: string;
+}
+
+const DEFAULT_COACH: LiveryColours = { body: '#c9b48a', stripe: '#1f5f5b', roof: '#d4d8da' };
+const DEFAULT_LOCO: LiveryColours = { body: '#1f5f5b', stripe: '#e0a63a', roof: '#b9bfc2' };
+
+/** Coach side: window band plus a two-tone livery. */
+export function coachSideTexture(l: LiveryColours = DEFAULT_COACH): THREE.CanvasTexture {
   const [c, g] = canvas(1024, 128);
-  g.fillStyle = '#c9b48a';
+  g.fillStyle = l.body;
   g.fillRect(0, 0, 1024, 128);
-  g.fillStyle = '#1f5f5b';
+  g.fillStyle = l.stripe;
   g.fillRect(0, 84, 1024, 44);
-  g.fillStyle = '#e7dcc0';
+  g.fillStyle = 'rgba(255,255,255,0.55)';
   g.fillRect(0, 80, 1024, 4);
   for (let x = 70; x < 960; x += 62) {
     g.fillStyle = '#26323a';
@@ -83,16 +94,47 @@ export function coachSideTexture(): THREE.CanvasTexture {
   return toTexture(c);
 }
 
-export function locoSideTexture(): THREE.CanvasTexture {
+/** EMU car side: wide doors and a band of windows. */
+export function emuSideTexture(l: LiveryColours): THREE.CanvasTexture {
+  const [c, g] = canvas(1024, 128);
+  g.fillStyle = l.body;
+  g.fillRect(0, 0, 1024, 128);
+  g.fillStyle = l.stripe;
+  g.fillRect(0, 92, 1024, 14);
+  for (let x = 40; x < 1000; x += 54) {
+    g.fillStyle = '#26323a';
+    g.fillRect(x, 28, 40, 38);
+  }
+  g.fillStyle = '#9aa3a8';
+  for (const x of [120, 470, 820]) g.fillRect(x, 20, 70, 100);
+  return toTexture(c);
+}
+
+/** Open goods wagon side with vertical ribs. */
+export function wagonSideTexture(l: LiveryColours): THREE.CanvasTexture {
   const [c, g] = canvas(512, 128);
-  g.fillStyle = '#1f5f5b';
+  g.fillStyle = l.body;
   g.fillRect(0, 0, 512, 128);
-  g.fillStyle = '#e0a63a';
+  g.fillStyle = l.stripe;
+  for (let x = 16; x < 512; x += 42) g.fillRect(x, 0, 6, 128);
+  g.fillRect(0, 0, 512, 8);
+  g.fillRect(0, 120, 512, 8);
+  return toTexture(c);
+}
+
+export function locoSideTexture(
+  l: LiveryColours = DEFAULT_LOCO,
+  number = 'TG 30001',
+): THREE.CanvasTexture {
+  const [c, g] = canvas(512, 128);
+  g.fillStyle = l.body;
+  g.fillRect(0, 0, 512, 128);
+  g.fillStyle = l.stripe;
   g.fillRect(0, 70, 512, 12);
-  g.fillStyle = '#e7dcc0';
+  g.fillStyle = 'rgba(255,255,255,0.6)';
   g.fillRect(0, 86, 512, 4);
   for (let x = 120; x < 400; x += 40) {
-    g.fillStyle = '#163f3c';
+    g.fillStyle = 'rgba(0,0,0,0.25)';
     g.fillRect(x, 20, 28, 38);
   }
   g.fillStyle = '#26323a';
@@ -100,7 +142,7 @@ export function locoSideTexture(): THREE.CanvasTexture {
   g.fillRect(436, 18, 60, 40);
   g.fillStyle = '#f2ead3';
   g.font = 'bold 22px sans-serif';
-  g.fillText('TG 30001', 210, 112);
+  g.fillText(number, 210, 112);
   return toTexture(c);
 }
 

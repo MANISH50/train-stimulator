@@ -334,3 +334,45 @@ body {
     top: 120px;
   }
 }
+
+/* Big notification for things the driver must act on (signal cleared, routed to loop). */
+.banner {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  max-width: min(620px, calc(100% - 32px));
+  display: grid;
+  gap: 4px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: rgba(14, 22, 26, 0.9);
+  border: 2px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 220ms,
+    transform 220ms;
+}
+
+.banner.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.banner b {
+  font-size: 18px;
+}
+
+.banner span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.banner.good {
+  border-color: var(--green);
+}
+
+.banner.warn {
+  border-color: var(--yellow);
+}
