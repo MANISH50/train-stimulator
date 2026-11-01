@@ -67,3 +67,5 @@
 
 ## Log
 - 2026-11-01T14:25:15.333Z — Claude needs your permission to use ExitPlanMode
+- 2026-11-01T15:03:39.433Z — Claude needs your permission to use AskUserQuestion
+- 2026-11-01T15:04:24.651Z — Claude needs your permission to use ExitPlanMode

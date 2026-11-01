@@ -4,6 +4,9 @@ An original 3D train-driving simulator set on Indian railways. You drive with th
 
 > Unofficial fan project. It is not affiliated with or endorsed by Indian Railways. All models, textures and sounds are original or openly licensed (see `docs/ASSET_LICENSES.md`).
 
+## Play online
+**https://manish50.github.io/train-stimulator/**. It is published automatically from `main` by GitHub Pages.
+
 ## Run it
 Requires Node.js 20 or later.
 
@@ -38,3 +41,8 @@ Open http://localhost:5173 and press **F1** for the controls. The full key list 
 
 ## Docs
 `docs/ARCHITECTURE.md`, `docs/RESEARCH.md` (with cited research in `docs/research/`), `docs/DESIGN.md`, `docs/ROADMAP.md`, `docs/PROGRESS.md` and the ADRs in `docs/adr/`. Rules for contributors and AI agents are in `CLAUDE.md`, and the subagents are in `.claude/agents/`.
+
+## Deploy
+Every push to `main` runs `.github/workflows/deploy-pages.yml`. It tests, lints and type-checks the project, builds with `PAGES_BASE=/train-stimulator/`, and publishes `dist/` to GitHub Pages. If any check fails, nothing is deployed.
+
+One-time setup: in the repo go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
