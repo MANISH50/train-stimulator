@@ -1,4 +1,5 @@
 import { ACTION_LABELS, DEFAULT_KEYMAP, keyLabel, type Action } from '../input/keymap';
+import type { CameraMode } from '../render/scene';
 import type { SimEvent } from '../sim/events';
 import { BP_CHARGED } from '../sim/physics/brakes';
 import type { Sim } from '../sim/sim';
@@ -54,6 +55,25 @@ export class Hud {
         <span data-k="next"></span>
         <span data-k="hint" class="hint"></span>
       </section>
+      <nav class="panel camBar" aria-label="Camera view">
+        <button data-cam="cab" title="Cab — pilot view with console">Cab<kbd>1</kbd></button>
+        <button data-cam="chase" title="Chase view">Chase<kbd>2</kbd></button>
+        <button data-cam="side" title="Side view">Side<kbd>3</kbd></button>
+        <button data-cam="top" title="Top view">Top<kbd>4</kbd></button>
+        <button class="menuBtn" data-k="menuBtn" title="Menu (Esc)">☰ Menu</button>
+      </nav>
+      <div class="panel keysBar" data-k="keysBar" aria-label="Key hints">
+        <span><kbd>W</kbd>/<kbd>S</kbd> throttle</span>
+        <span><kbd>]</kbd> brake · <kbd>[</kbd> release</span>
+        <span><kbd>;</kbd> release loco brake · <kbd>'</kbd> apply</span>
+        <span><kbd>Backspace</kbd> emergency</span>
+        <span><kbd>R</kbd> reverser</span>
+        <span><kbd>H</kbd> horn</span>
+        <span><kbd>1</kbd>–<kbd>4</kbd> camera</span>
+        <span><kbd>F1</kbd> all keys</span>
+        <span><kbd>Esc</kbd> menu</span>
+        <span><kbd>K</kbd> hide hints</span>
+      </div>
       <div class="toast" data-k="toast" role="status"></div>
       <div class="perf" data-k="perf" hidden></div>
       <div class="overlay" data-k="overlay" hidden></div>
@@ -169,8 +189,36 @@ export class Hud {
       `${p.fps.toFixed(0)} FPS · ${p.frameMs.toFixed(1)} ms · ${p.calls} draws · ${(p.triangles / 1000).toFixed(0)}k tris · ${p.quality}`;
   }
 
+  /** Wire the on-screen camera buttons and the Menu button. */
+  onCameraButtons(onCamera: (mode: CameraMode) => void, onMenu: () => void): void {
+    this.root.querySelectorAll<HTMLButtonElement>('[data-cam]').forEach((b) =>
+      b.addEventListener('click', (e) => {
+        (e.currentTarget as HTMLButtonElement).blur(); // keep keyboard driving focused on the game
+        onCamera(b.dataset['cam'] as CameraMode);
+      }),
+    );
+    this.el['menuBtn']!.addEventListener('click', onMenu);
+  }
+
+  setActiveCamera(mode: CameraMode): void {
+    this.root.querySelectorAll<HTMLButtonElement>('[data-cam]').forEach((b) => {
+      const on = b.dataset['cam'] === mode;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+
+  /** Hide the whole driving HUD (used behind the start menu). */
+  setVisible(on: boolean): void {
+    this.root.hidden = !on;
+  }
+
   setInstrumentsVisible(on: boolean): void {
     this.root.querySelector<HTMLElement>('.instruments')!.hidden = !on;
+  }
+
+  toggleKeyHints(): void {
+    this.el['keysBar']!.hidden = !this.el['keysBar']!.hidden;
   }
 
   toggleHelp(): void {
@@ -178,7 +226,7 @@ export class Hud {
   }
 
   setPaused(paused: boolean): void {
-    if (paused) this.showOverlay('Paused', 'Press P or Esc to continue.', '');
+    if (paused) this.showOverlay('Paused', 'Press P to continue, or Esc for the menu.', '');
     else this.el['overlay']!.hidden = true;
   }
 

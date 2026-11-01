@@ -41,14 +41,15 @@ export function tractiveEffortDemand(c: Consist, notch: number, speedMs: number)
   const frac = Math.min(notch, loco.notches) / loco.notches;
   const v = Math.abs(speedMs);
   if (v >= loco.maxSpeedKmh / 3.6) return 0;
-  const teCap = loco.maxTractiveEffortKN * 1000 * frac;
+  const boost = loco.gameTractionBoost ?? 1;
+  const teCap = loco.maxTractiveEffortKN * 1000 * frac * boost;
   // Constant-power region: TE = P / v (guard v near zero).
-  const powerLimited = (loco.powerKW * 1000 * frac) / Math.max(v, 0.5);
+  const powerLimited = (loco.powerKW * 1000 * frac * boost) / Math.max(v, 0.5);
   return Math.min(teCap, powerLimited);
 }
 
 export function adhesionLimit(c: Consist, adhesionCoeff: number): number {
-  return adhesionCoeff * c.locoMassKg * G;
+  return adhesionCoeff * (c.loco.gameTractionBoost ?? 1) * c.locoMassKg * G;
 }
 
 /** Tractive effort reaching the rail, and whether the wheels are slipping. */

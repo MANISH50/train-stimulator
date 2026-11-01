@@ -17,7 +17,9 @@ export type Action =
   | 'perf'
   | 'quality'
   | 'help'
+  | 'keys'
   | 'pause'
+  | 'menu'
   | 'restart';
 
 export const DEFAULT_KEYMAP: Record<Action, string[]> = {
@@ -38,7 +40,9 @@ export const DEFAULT_KEYMAP: Record<Action, string[]> = {
   perf: ['F3'],
   quality: ['KeyQ'],
   help: ['F1', 'Slash'],
-  pause: ['KeyP', 'Escape'],
+  keys: ['KeyK'],
+  pause: ['KeyP'],
+  menu: ['Escape'],
   restart: ['Enter'],
 };
 
@@ -60,7 +64,9 @@ export const ACTION_LABELS: Record<Action, string> = {
   perf: 'Performance overlay',
   quality: 'Cycle quality preset',
   help: 'Show / hide controls',
+  keys: 'Show / hide the key hints bar',
   pause: 'Pause',
+  menu: 'Open the menu',
   restart: 'Restart run',
 };
 
@@ -74,6 +80,8 @@ export function keyLabel(code: string): string {
     ArrowUp: '↑',
     ArrowDown: '↓',
     Space: 'Space',
+    Escape: 'Esc',
+    Backspace: 'Backspace',
   };
   return named[code] ?? code.replace(/^(Key|Digit)/, '');
 }

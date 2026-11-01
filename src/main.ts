@@ -10,6 +10,7 @@ import { CAMERA_NAMES, GameRenderer, type CameraMode } from './render/scene';
 import { FixedClock } from './sim/clock';
 import { Sim, type SimSetup } from './sim/sim';
 import { Hud } from './ui/hud';
+import { StartMenu } from './ui/menu';
 
 const setup: SimSetup = {
   route: parseRoute(routeJson),
@@ -42,9 +43,41 @@ window.addEventListener('pointerdown', () => audio.start(), { once: true });
 /** The 3D console replaces the HUD instrument panel inside the cab. */
 function showCamera(mode: CameraMode): void {
   hud.setInstrumentsVisible(mode !== 'cab');
+  hud.setActiveCamera(mode);
   audio.setInCab(mode === 'cab');
   hud.toast(CAMERA_NAMES[mode], 'info');
 }
+
+// ---- Start menu: the game opens here; the world slowly orbits behind it. ----
+const menu = new StartMenu(document.body, renderer.preset.name);
+let inMenu = true;
+let started = false;
+renderer.setCamera('chase');
+hud.setVisible(false);
+
+function openMenu(): void {
+  inMenu = true;
+  menu.show(started);
+  hud.setVisible(false);
+}
+
+function closeMenu(): void {
+  inMenu = false;
+  paused = false;
+  menu.hide();
+  hud.setVisible(true);
+  last = performance.now();
+}
+
+menu.onStart((choice, restartRequested) => {
+  audio.start();
+  if (choice.quality !== renderer.preset.name) renderer.applyPreset(PRESETS[choice.quality]);
+  if (restartRequested || sim.status !== 'running') restart();
+  started = true;
+  closeMenu();
+  showCamera(renderer.setCamera(choice.camera));
+});
+hud.onCameraButtons((mode) => showCamera(renderer.setCamera(mode)), openMenu);
 
 function restart(): void {
   sim = new Sim(setup);
@@ -56,8 +89,17 @@ function restart(): void {
 function handleActions(): void {
   const ctl = sim.controls;
   const stopped = sim.train.v === 0;
-  for (const a of input.takePressed()) {
+  const pressed = input.takePressed();
+  if (inMenu) {
+    // Driving keys are ignored on the menu; Esc returns to a journey already under way.
+    if (started && pressed.includes('menu')) closeMenu();
+    return;
+  }
+  for (const a of pressed) {
     switch (a) {
+      case 'menu':
+        openMenu();
+        break;
       case 'notchUp':
         ctl.notch = Math.min(sim.consist.loco.notches, ctl.notch + 1);
         break;
@@ -105,6 +147,9 @@ function handleActions(): void {
         hud.toast(`Quality: ${next}`, 'info');
         break;
       }
+      case 'keys':
+        hud.toggleKeyHints();
+        break;
       case 'help':
         hud.toggleHelp();
         break;
@@ -127,10 +172,12 @@ function frame(now: number): void {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   handleActions();
-  input.updateHandles(sim.controls, sim.consist.loco.notches, paused ? 0 : dt);
+  const frozen = paused || inMenu;
+  input.updateHandles(sim.controls, sim.consist.loco.notches, frozen ? 0 : dt);
+  if (inMenu) renderer.orbit(dt);
 
   let alpha = 1;
-  if (!paused) {
+  if (!frozen) {
     const adv = clock.advance(dt);
     alpha = adv.alpha;
     for (let i = 0; i < adv.steps; i++) {
@@ -162,7 +209,6 @@ function frame(now: number): void {
 }
 
 requestAnimationFrame(frame);
-showCamera(renderer.setCamera('chase'));
 
 // Read-only hook for automated tests and debugging.
 declare global {

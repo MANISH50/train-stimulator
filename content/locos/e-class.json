@@ -12,6 +12,7 @@
   "independentBrakeRatio": 0.15,
   "resistance": { "a": 1.348, "b": 0.02153, "c": 0.0000836, "starting": 6 },
   "rotatingMassFraction": 0.2,
+  "gameTractionBoost": 1.3,
   "source": "docs/research/02-train-physics.md parameter table (WAP-7-like passenger electric; Davis from WAP-5 coefficients)",
-  "note": "Original generic loco; figures approximate. Notches are a game abstraction of a continuous throttle. independentBrakeRatio is tuning (UNVERIFIED)."
+  "note": "Original generic loco; figures approximate. Notches are a game abstraction of a continuous throttle. independentBrakeRatio is tuning (UNVERIFIED). gameTractionBoost 1.3 is a deliberate gameplay choice for quicker pickup (0-100 km/h ~64 s vs ~85 s at researched figures)."
 }

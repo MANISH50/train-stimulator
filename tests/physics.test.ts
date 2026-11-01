@@ -125,8 +125,8 @@ describe('train physics', () => {
     release(sim);
     sim.controls.notch = 8;
     while (sim.train.v * 3.6 < 100 && sim.timeS < 600) sim.step();
-    // Single-loco 600 t passenger train: well over a minute, under ~4 minutes (approximate).
-    expect(sim.timeS).toBeGreaterThan(60);
+    // Single-loco ~675 t passenger train with the 1.3x gameplay pickup boost: about a minute.
+    expect(sim.timeS).toBeGreaterThan(40);
     expect(sim.timeS).toBeLessThan(240);
   });
 

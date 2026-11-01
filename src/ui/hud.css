@@ -207,13 +207,14 @@ body {
 }
 
 .top {
+  /* Top-left, wrapping so it never runs under the camera buttons on the right. */
   top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 16px;
+  max-width: calc(100% - 386px);
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 4px 20px;
   font-size: 14px;
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
@@ -255,7 +256,7 @@ body {
 
 .perf {
   position: absolute;
-  top: 16px;
+  top: 64px;
   right: 16px;
   font:
     12px ui-monospace,
@@ -325,5 +326,11 @@ body {
   .top {
     font-size: 12px;
     gap: 10px;
+  }
+}
+
+@media (max-width: 1150px) {
+  .toast {
+    top: 120px;
   }
 }

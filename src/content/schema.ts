@@ -27,6 +27,7 @@ export const LocoSchema = source.extend({
   independentBrakeRatio: z.number().min(0).max(0.5),
   resistance: davis,
   rotatingMassFraction: z.number().min(0).max(0.5),
+  gameTractionBoost: z.number().min(1).max(2).optional(),
 });
 
 export const RakeSchema = source.extend({

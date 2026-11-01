@@ -32,7 +32,7 @@
 - FPS on a real integrated GPU has not been measured: the browser pane was hidden, so frame timing there was not meaningful. Run `npm run dev`, press F3 and read the Medium preset.
 - The bundle is ~690 KB (mostly three.js). Code-splitting comes later.
 - The `npm audit` dev dependencies report 12 moderate issues (none in runtime deps).
-- The repository has no commits yet.
+- Committed to git (initial commit 193994b).
 
 **Risks**
 - Product name (docs/research/04 §4).

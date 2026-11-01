@@ -130,6 +130,11 @@ export class GameRenderer {
     return mode;
   }
 
+  /** Slow orbit of the chase camera, used behind the start menu. */
+  orbit(dtS: number): void {
+    this.chaseYaw += dtS * 0.12;
+  }
+
   /** Cycle cab → chase → side → top. */
   cycleCamera(): CameraMode {
     const i = CAMERA_MODES.indexOf(this.cameraMode);

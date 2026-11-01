@@ -6,6 +6,7 @@ test('loads, renders and drives', async ({ page }) => {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 
   await page.goto('/');
+  await page.getByRole('button', { name: 'Play' }).click();
   await expect(page.locator('#scene')).toBeVisible();
   await expect(page.locator('[data-k="sigName"]')).toHaveText('Distant D1');
 
@@ -32,6 +33,7 @@ test('switches between the four camera views', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
+  await page.getByRole('button', { name: 'Play' }).click();
   const camera = () => page.evaluate(() => window.__game?.camera);
   const instruments = page.locator('.instruments');
 
@@ -50,10 +52,32 @@ test('switches between the four camera views', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('start menu, on-screen camera buttons and Esc menu', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('dialog', { name: 'Start menu' })).toBeVisible();
+  await expect(page.getByText('How to drive')).toBeVisible();
+  await page.getByRole('button', { name: 'Side' }).click(); // starting camera
+  await page.getByRole('button', { name: 'Play' }).click();
+  const camera = () => page.evaluate(() => window.__game?.camera);
+  await expect.poll(camera).toBe('side');
+
+  await page.locator('.camBar [data-cam="top"]').click();
+  await expect.poll(camera).toBe('top');
+  await page.locator('.camBar [data-cam="cab"]').click();
+  await expect.poll(camera).toBe('cab');
+  await expect(page.locator('.keysBar')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Start menu' })).toBeHidden();
+});
+
 test('horn blasts are recognised as whistle codes', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
+  await page.getByRole('button', { name: 'Play' }).click();
   const toast = page.locator('[data-k="toast"]');
 
   // One long blast = normal departure.

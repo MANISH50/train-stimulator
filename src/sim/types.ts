@@ -17,6 +17,11 @@ export interface LocoParams {
   resistance: Davis;
   /** Extra effective mass from rotating parts, as a fraction of mass (e.g. 0.2). */
   rotatingMassFraction: number;
+  /**
+   * Gameplay pickup multiplier on tractive effort, power and adhesion (1 = researched
+   * figures). Values above 1 make the train accelerate faster than the real loco would.
+   */
+  gameTractionBoost?: number;
 }
 
 /** Davis running-resistance coefficients in kg/t (IR convention), V in km/h: a + b*V + c*V². */

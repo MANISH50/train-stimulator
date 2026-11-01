@@ -1,5 +1,7 @@
 # Controls (default, remappable in `src/input/keymap.ts`)
 
+The game opens on a start menu: pick the journey, starting camera and graphics, then **Play**. While driving, the camera buttons (Cab / Chase / Side / Top) and **Menu** are at the top right, and a key-hints bar shows the essential keys.
+
 | Key | Action |
 |---|---|
 | W / ↑ | Throttle notch up (0–8) |
@@ -19,7 +21,9 @@
 | F1 or ? | Controls card |
 | F3 | Performance overlay |
 | Q | Cycle quality Low / Medium / High |
-| P / Esc | Pause |
+| P | Pause |
+| Esc | Open the menu (Esc again resumes) |
+| K | Show / hide the key hints bar |
 | Enter | Restart after a failed or finished run |
 
 **First drive:** hold `;` to release the loco brake, press W a few times, watch the next-signal panel, brake with `]` well before red signals and the platform STOP mark.
