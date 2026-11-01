@@ -1,0 +1,53 @@
+{
+  "id": "intercity",
+  "order": 2,
+  "title": "Intercity Express",
+  "subtitle": "Superfast · 22 LHB coaches · 130 km/h",
+  "detail": "Top priority. A slower passenger ahead is put into the Rampur loop so you can overtake. Stop at Devgarh.",
+  "routeId": "intercity",
+  "player": {
+    "trainTypeId": "superfast",
+    "startS": 600,
+    "stops": [
+      {
+        "stationId": "DVG",
+        "dueS": 600,
+        "dwellS": 60
+      }
+    ]
+  },
+  "traffic": [
+    {
+      "id": "up-passenger",
+      "trainTypeId": "passenger",
+      "dir": 1,
+      "spawnAtS": 0,
+      "spawnS": 2600,
+      "stops": [
+        {
+          "stationId": "RMP"
+        },
+        {
+          "stationId": "DVG"
+        }
+      ]
+    },
+    {
+      "id": "dn-mail",
+      "trainTypeId": "mail-express",
+      "dir": -1,
+      "spawnAtS": 40,
+      "spawnS": 14970,
+      "stops": []
+    },
+    {
+      "id": "dn-goods",
+      "trainTypeId": "goods",
+      "dir": -1,
+      "spawnAtS": 320,
+      "spawnS": 14970,
+      "stops": []
+    }
+  ],
+  "defaultWeather": "clear"
+}

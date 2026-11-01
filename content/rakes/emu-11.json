@@ -1,0 +1,22 @@
+{
+  "resistance": {
+    "a": 0.699,
+    "b": 0.02153,
+    "c": 0.0000835,
+    "starting": 4
+  },
+  "rotatingMassFraction": 0.06,
+  "brakeForceRatio": 0.1,
+  "bcMax": 3,
+  "bcApplyTauS": 1.25,
+  "bcReleaseTauS": 4,
+  "brakeSignalSpeedMps": 150,
+  "id": "emu-11",
+  "name": "EMU trailer cars (11)",
+  "vehicles": 11,
+  "vehicleMassT": 38,
+  "vehicleLengthM": 21,
+  "style": "emu",
+  "source": "Game approximation (UNVERIFIED)",
+  "note": "With the driving motor set this forms a 12-car EMU."
+}

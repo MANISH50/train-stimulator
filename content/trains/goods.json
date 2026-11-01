@@ -1,0 +1,22 @@
+{
+  "id": "goods",
+  "name": "Goods",
+  "class": "goods",
+  "priority": 1,
+  "speciality": "~4,700 t, very long braking, lowest priority",
+  "locoId": "g-class",
+  "rakeId": "boxn-58",
+  "aiAccelMs2": 0.12,
+  "aiDecelMs2": 0.25,
+  "dwellS": 0,
+  "livery": {
+    "body": "#7a4a2e",
+    "stripe": "#5a3520",
+    "roof": "#3a3a36"
+  },
+  "locoLivery": {
+    "body": "#c8642b",
+    "stripe": "#e8e2d0",
+    "roof": "#8a8f90"
+  }
+}

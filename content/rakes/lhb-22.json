@@ -1,0 +1,21 @@
+{
+  "resistance": {
+    "a": 0.699,
+    "b": 0.02153,
+    "c": 0.0000835,
+    "starting": 4
+  },
+  "rotatingMassFraction": 0.06,
+  "brakeForceRatio": 0.085,
+  "bcMax": 3,
+  "bcApplyTauS": 1.25,
+  "bcReleaseTauS": 4,
+  "brakeSignalSpeedMps": 150,
+  "id": "lhb-22",
+  "name": "22-coach LHB-type superfast rake",
+  "vehicles": 22,
+  "vehicleMassT": 46,
+  "vehicleLengthM": 24,
+  "style": "coach",
+  "source": "docs/research/02-train-physics.md (LHB ~41 t + load, 24 m)"
+}

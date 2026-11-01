@@ -1,0 +1,23 @@
+{
+  "id": "d-class",
+  "name": "D-class diesel (generic)",
+  "traction": "diesel",
+  "massT": 120,
+  "lengthM": 19.8,
+  "powerKW": 2900,
+  "maxTractiveEffortKN": 400,
+  "maxSpeedKmh": 110,
+  "notches": 8,
+  "adhesionDry": 0.3,
+  "independentBrakeRatio": 0.15,
+  "resistance": {
+    "a": 1.348,
+    "b": 0.02153,
+    "c": 0.0000836,
+    "starting": 6
+  },
+  "rotatingMassFraction": 0.2,
+  "gameTractionBoost": 1.7,
+  "source": "docs/research/02-train-physics.md (WDP-4-like diesel: ~2.7-3.0 MW at rail, ~400 kN; mass UNVERIFIED)",
+  "note": "Original generic loco; mass UNVERIFIED; loco Davis reused from the electric loco (UNVERIFIED for diesel). 110 km/h is a game cap."
+}

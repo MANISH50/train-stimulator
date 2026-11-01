@@ -1,0 +1,22 @@
+{
+  "id": "boxn-58",
+  "name": "58 open wagons, loaded (BOXN-type)",
+  "vehicles": 58,
+  "vehicleMassT": 81.3,
+  "vehicleLengthM": 10.7,
+  "style": "wagon",
+  "resistance": {
+    "a": 0.644,
+    "b": 0.01047,
+    "c": 0.0000732,
+    "starting": 4
+  },
+  "rotatingMassFraction": 0.03,
+  "brakeForceRatio": 0.03,
+  "bcMax": 3.8,
+  "bcApplyTauS": 7,
+  "bcReleaseTauS": 9,
+  "brakeSignalSpeedMps": 120,
+  "source": "docs/research/02-train-physics.md (BOXN loaded 81.3 t, 58 wagons ~4,700 t; BOXN Davis; goods BC timings; wagon length UNVERIFIED)",
+  "note": "brakeForceRatio tuned toward the ~0.25 m/s2 loaded-BOXN emergency target."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "passenger",
+  "name": "Passenger",
+  "class": "passenger",
+  "priority": 4,
+  "speciality": "Diesel, 110 km/h, stops everywhere",
+  "locoId": "d-class",
+  "rakeId": "coach-12",
+  "aiAccelMs2": 0.35,
+  "aiDecelMs2": 0.6,
+  "dwellS": 30,
+  "livery": {
+    "body": "#4f6b3a",
+    "stripe": "#e6dcc0",
+    "roof": "#cfd3d4"
+  },
+  "locoLivery": {
+    "body": "#3c4f2a",
+    "stripe": "#e8c547",
+    "roof": "#8a8f90"
+  }
+}

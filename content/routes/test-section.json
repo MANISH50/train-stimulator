@@ -1,26 +1,70 @@
 {
   "id": "test-section",
   "name": "Training Ground test section",
+  "note": "Original fictional training section, double line, ~6 km.",
   "fictional": true,
-  "note": "Original fictional training section, ~4.2 km.",
   "startChainageM": 0,
   "segments": [
-    { "type": "straight", "lengthM": 1200 },
-    { "type": "curve", "lengthM": 600, "radiusM": 1000, "turn": "left" },
-    { "type": "straight", "lengthM": 1000 },
-    { "type": "curve", "lengthM": 400, "radiusM": 1500, "turn": "right" },
-    { "type": "straight", "lengthM": 1000 }
+    {
+      "type": "straight",
+      "lengthM": 1200
+    },
+    {
+      "type": "curve",
+      "lengthM": 600,
+      "radiusM": 1000,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 1000
+    },
+    {
+      "type": "curve",
+      "lengthM": 400,
+      "radiusM": 1500,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 2800
+    }
   ],
   "gradients": [
-    { "fromM": 0, "grade": 0 },
-    { "fromM": 1400, "grade": 0.005 },
-    { "fromM": 2400, "grade": 0 },
-    { "fromM": 3000, "grade": -0.004 },
-    { "fromM": 3500, "grade": 0 }
+    {
+      "fromM": 0,
+      "grade": 0
+    },
+    {
+      "fromM": 1400,
+      "grade": 0.005
+    },
+    {
+      "fromM": 2400,
+      "grade": 0
+    },
+    {
+      "fromM": 3000,
+      "grade": -0.004
+    },
+    {
+      "fromM": 3500,
+      "grade": 0
+    }
   ],
   "speedLimits": [
-    { "fromM": 0, "toM": 4200, "kmh": 110, "kind": "permanent" },
-    { "fromM": 1500, "toM": 1900, "kmh": 50, "kind": "temporary" }
+    {
+      "fromM": 0,
+      "toM": 6000,
+      "kmh": 110,
+      "kind": "permanent"
+    },
+    {
+      "fromM": 1500,
+      "toM": 1900,
+      "kmh": 50,
+      "kind": "temporary"
+    }
   ],
   "stations": [
     {
@@ -28,29 +72,111 @@
       "name": "Prashikshan Nagar",
       "localName": "प्रशिक्षण नगर",
       "stopMarkM": 3900,
-      "platformLengthM": 450
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
     }
   ],
   "signals": [
     {
-      "id": "D1",
-      "label": "Distant D1",
+      "id": "A1",
+      "label": "Automatic A1",
+      "kind": "automatic",
+      "chainageM": 900
+    },
+    {
+      "id": "DA4",
+      "label": "Automatic DA4",
+      "kind": "automatic",
+      "chainageM": 1200,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "PRS-D",
+      "label": "Distant PRS",
       "kind": "distant",
-      "chainageM": 2100,
-      "timeline": [
-        { "atS": 0, "aspect": "YELLOW" },
-        { "atS": 150, "aspect": "GREEN" }
+      "chainageM": 1900
+    },
+    {
+      "id": "DA3",
+      "label": "Automatic DA3",
+      "kind": "automatic",
+      "chainageM": 2500,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "PRS-H",
+      "label": "Home PRS",
+      "kind": "home",
+      "chainageM": 3100,
+      "stationId": "PRS",
+      "holdUntilS": 150
+    },
+    {
+      "id": "DA2",
+      "label": "Automatic DA2",
+      "kind": "automatic",
+      "chainageM": 3800,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "PRS-S",
+      "label": "Starter PRS",
+      "kind": "starter",
+      "chainageM": 3950,
+      "stationId": "PRS"
+    },
+    {
+      "id": "PRS-AS",
+      "label": "Advanced Starter PRS",
+      "kind": "advanced-starter",
+      "chainageM": 4500
+    },
+    {
+      "id": "DA1",
+      "label": "Automatic DA1",
+      "kind": "automatic",
+      "chainageM": 5100,
+      "line": "DN",
+      "dir": -1
+    }
+  ],
+  "lines": [
+    {
+      "id": "UP",
+      "name": "Up main",
+      "fromM": 0,
+      "toM": 6000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": -2.65
+        }
       ]
     },
     {
-      "id": "H1",
-      "label": "Home H1",
-      "kind": "home",
-      "chainageM": 3000,
-      "timeline": [
-        { "atS": 0, "aspect": "RED" },
-        { "atS": 150, "aspect": "YELLOW" }
+      "id": "DN",
+      "name": "Down main",
+      "fromM": 0,
+      "toM": 6000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": 2.65
+        }
       ]
     }
-  ]
+  ],
+  "loops": []
 }

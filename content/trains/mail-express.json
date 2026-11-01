@@ -1,0 +1,22 @@
+{
+  "id": "mail-express",
+  "name": "Mail Express",
+  "class": "express",
+  "priority": 6,
+  "speciality": "110 km/h, mixed stops",
+  "locoId": "e-class",
+  "rakeId": "coach-18",
+  "aiAccelMs2": 0.4,
+  "aiDecelMs2": 0.6,
+  "dwellS": 30,
+  "livery": {
+    "body": "#c9b48a",
+    "stripe": "#1f5f5b",
+    "roof": "#d4d8da"
+  },
+  "locoLivery": {
+    "body": "#1f5f5b",
+    "stripe": "#e0a63a",
+    "roof": "#b9bfc2"
+  }
+}

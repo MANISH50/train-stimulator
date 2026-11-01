@@ -1,0 +1,22 @@
+{
+  "id": "suburban-emu",
+  "name": "Suburban EMU",
+  "class": "suburban",
+  "priority": 5,
+  "speciality": "Quick pickup, short dwell, frequent stops",
+  "locoId": "emu-motor",
+  "rakeId": "emu-11",
+  "aiAccelMs2": 0.7,
+  "aiDecelMs2": 0.8,
+  "dwellS": 20,
+  "livery": {
+    "body": "#6b3f8a",
+    "stripe": "#f2c230",
+    "roof": "#d4d8da"
+  },
+  "locoLivery": {
+    "body": "#6b3f8a",
+    "stripe": "#f2c230",
+    "roof": "#d4d8da"
+  }
+}

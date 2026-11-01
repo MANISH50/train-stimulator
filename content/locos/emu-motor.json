@@ -1,0 +1,23 @@
+{
+  "id": "emu-motor",
+  "name": "EMU driving motor set (generic)",
+  "traction": "electric",
+  "massT": 240,
+  "lengthM": 21,
+  "powerKW": 3600,
+  "maxTractiveEffortKN": 330,
+  "maxSpeedKmh": 100,
+  "notches": 8,
+  "adhesionDry": 0.3,
+  "independentBrakeRatio": 0.1,
+  "resistance": {
+    "a": 1.348,
+    "b": 0.02153,
+    "c": 0.0000836,
+    "starting": 6
+  },
+  "rotatingMassFraction": 0.12,
+  "gameTractionBoost": 1.5,
+  "source": "Game approximation; no EMU figures in docs/research (UNVERIFIED).",
+  "note": "Models the distributed traction of a 12-car EMU as one power unit whose mass covers the motor coaches; all figures UNVERIFIED approximations."
+}

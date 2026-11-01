@@ -1,0 +1,74 @@
+{
+  "id": "suburban",
+  "order": 3,
+  "title": "Suburban Local",
+  "subtitle": "12-car EMU · frequent stops",
+  "detail": "Four stations about 1.5 km apart. Another EMU runs ahead of you, so expect yellow and red signals.",
+  "routeId": "suburban",
+  "player": {
+    "trainTypeId": "suburban-emu",
+    "startS": 300,
+    "stops": [
+      {
+        "stationId": "NGR",
+        "dueS": 160,
+        "dwellS": 20
+      },
+      {
+        "stationId": "KLN",
+        "dueS": 300,
+        "dwellS": 20
+      },
+      {
+        "stationId": "BGH",
+        "dueS": 440,
+        "dwellS": 20
+      },
+      {
+        "stationId": "SGM",
+        "dueS": 580,
+        "dwellS": 20
+      }
+    ]
+  },
+  "traffic": [
+    {
+      "id": "up-emu",
+      "trainTypeId": "suburban-emu",
+      "dir": 1,
+      "spawnAtS": 0,
+      "spawnS": 1400,
+      "stops": [
+        {
+          "stationId": "NGR"
+        },
+        {
+          "stationId": "KLN"
+        },
+        {
+          "stationId": "BGH"
+        },
+        {
+          "stationId": "SGM"
+        }
+      ]
+    },
+    {
+      "id": "dn-emu-1",
+      "trainTypeId": "suburban-emu",
+      "dir": -1,
+      "spawnAtS": 15,
+      "spawnS": 7470,
+      "stops": []
+    },
+    {
+      "id": "dn-emu-2",
+      "trainTypeId": "suburban-emu",
+      "dir": -1,
+      "spawnAtS": 220,
+      "spawnS": 7470,
+      "stops": []
+    }
+  ],
+  "defaultWeather": "haze"
+}

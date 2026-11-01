@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import type { LocoParams, RakeParams, RouteDef } from '../sim/types';
+import type { LevelDef, LocoParams, RakeParams, RouteDef, TrainType } from '../sim/types';
 
 const aspect = z.enum(['RED', 'YELLOW', 'DOUBLE_YELLOW', 'GREEN']);
+const dirSchema = z.union([z.literal(1), z.literal(-1)]);
 const positive = z.number().positive();
 const davis = z.object({
   a: z.number().min(0),
@@ -42,6 +43,7 @@ export const RakeSchema = source.extend({
   bcMax: z.number().min(1).max(6),
   bcApplyTauS: positive,
   bcReleaseTauS: positive,
+  style: z.enum(['coach', 'emu', 'wagon']).optional(),
   brakeSignalSpeedMps: z.number().min(10).max(400),
 });
 
@@ -80,6 +82,7 @@ export const RouteSchema = source
         localName: z.string().optional(),
         stopMarkM: z.number(),
         platformLengthM: positive,
+        platforms: z.array(z.object({ offsetM: z.number(), widthM: positive })).optional(),
       }),
     ),
     signals: z.array(
@@ -95,9 +98,40 @@ export const RouteSchema = source
           'automatic',
         ]),
         chainageM: z.number().min(0),
-        timeline: z.array(z.object({ atS: z.number().min(0), aspect })).min(1),
+        line: z.string().optional(),
+        dir: dirSchema.optional(),
+        stationId: z.string().optional(),
+        holdUntilS: z.number().min(0).optional(),
+        timeline: z
+          .array(z.object({ atS: z.number().min(0), aspect }))
+          .min(1)
+          .optional(),
       }),
     ),
+    lines: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string(),
+          fromM: z.number().min(0),
+          toM: z.number().min(0),
+          offsets: z.array(z.object({ atM: z.number(), offsetM: z.number() })).min(1),
+          speedLimitKmh: positive.optional(),
+        }),
+      )
+      .optional(),
+    loops: z
+      .array(
+        z.object({
+          stationId: z.string(),
+          lineId: z.string(),
+          mainLineId: z.string(),
+          dir: dirSchema,
+          fromM: z.number().min(0),
+          toM: z.number().min(0),
+        }),
+      )
+      .optional(),
   })
   .superRefine((r, ctx) => {
     const length = r.segments.reduce((sum, s) => sum + s.lengthM, 0);
@@ -111,14 +145,84 @@ export const RouteSchema = source
     for (const sig of r.signals) {
       if (sig.chainageM > length)
         ctx.addIssue({ code: 'custom', message: `signal ${sig.id} beyond end of track` });
-      if (!sorted(sig.timeline.map((t) => t.atS)))
+      if (sig.timeline && !sorted(sig.timeline.map((t) => t.atS)))
         ctx.addIssue({ code: 'custom', message: `signal ${sig.id} timeline not sorted` });
     }
     for (const st of r.stations) {
       if (st.stopMarkM > length)
         ctx.addIssue({ code: 'custom', message: `station ${st.id} beyond end of track` });
     }
+    const lineIds = new Set((r.lines ?? [{ id: 'UP' }]).map((l) => l.id));
+    const stationIds = new Set(r.stations.map((st) => st.id));
+    for (const sig of r.signals) {
+      if (!lineIds.has(sig.line ?? 'UP'))
+        ctx.addIssue({
+          code: 'custom',
+          message: `signal ${sig.id} is on unknown line ${sig.line}`,
+        });
+      if (sig.stationId && !stationIds.has(sig.stationId))
+        ctx.addIssue({
+          code: 'custom',
+          message: `signal ${sig.id} has unknown station ${sig.stationId}`,
+        });
+    }
+    for (const l of r.loops ?? []) {
+      if (!lineIds.has(l.lineId) || !lineIds.has(l.mainLineId))
+        ctx.addIssue({ code: 'custom', message: `loop at ${l.stationId} uses an unknown line` });
+      if (!stationIds.has(l.stationId))
+        ctx.addIssue({ code: 'custom', message: `loop has unknown station ${l.stationId}` });
+      if (l.toM <= l.fromM)
+        ctx.addIssue({ code: 'custom', message: `loop at ${l.stationId} is empty` });
+    }
   });
+
+const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+const livery = z.object({ body: hex, stripe: hex, roof: hex });
+const stopSpec = z.object({
+  stationId: z.string(),
+  dueS: z.number().min(0).optional(),
+  dwellS: z.number().min(0).optional(),
+});
+
+export const TrainTypeSchema = source.extend({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  class: z.enum(['superfast', 'express', 'passenger', 'suburban', 'goods']),
+  priority: z.number().int().min(0).max(10),
+  speciality: z.string(),
+  locoId: z.string(),
+  rakeId: z.string(),
+  aiAccelMs2: z.number().min(0.05).max(2),
+  aiDecelMs2: z.number().min(0.05).max(2),
+  dwellS: z.number().min(0),
+  livery,
+  locoLivery: livery,
+});
+
+export const LevelSchema = source.extend({
+  id: z.string().min(1),
+  order: z.number().int(),
+  title: z.string(),
+  subtitle: z.string(),
+  detail: z.string(),
+  routeId: z.string(),
+  player: z.object({
+    trainTypeId: z.string(),
+    startS: z.number().min(0),
+    stops: z.array(stopSpec),
+  }),
+  traffic: z.array(
+    z.object({
+      id: z.string(),
+      trainTypeId: z.string(),
+      dir: dirSchema,
+      spawnAtS: z.number().min(0),
+      spawnS: z.number().min(0),
+      stops: z.array(stopSpec),
+    }),
+  ),
+  defaultWeather: z.enum(['clear', 'haze', 'rain', 'fog', 'night']),
+});
 
 export function parseLoco(data: unknown): LocoParams {
   return LocoSchema.parse(data);
@@ -128,4 +232,10 @@ export function parseRake(data: unknown): RakeParams {
 }
 export function parseRoute(data: unknown): RouteDef {
   return RouteSchema.parse(data);
+}
+export function parseTrainType(data: unknown): TrainType {
+  return TrainTypeSchema.parse(data);
+}
+export function parseLevel(data: unknown): LevelDef {
+  return LevelSchema.parse(data);
 }

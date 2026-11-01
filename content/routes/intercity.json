@@ -1,0 +1,365 @@
+{
+  "id": "intercity",
+  "name": "Intercity corridor",
+  "note": "Original fictional 15 km double line with two loop stations.",
+  "fictional": true,
+  "startChainageM": 0,
+  "segments": [
+    {
+      "type": "straight",
+      "lengthM": 3000
+    },
+    {
+      "type": "curve",
+      "lengthM": 1200,
+      "radiusM": 2000,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 3800
+    },
+    {
+      "type": "curve",
+      "lengthM": 1000,
+      "radiusM": 1800,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 6000
+    }
+  ],
+  "gradients": [
+    {
+      "fromM": 0,
+      "grade": 0
+    },
+    {
+      "fromM": 7600,
+      "grade": 0.003
+    },
+    {
+      "fromM": 9600,
+      "grade": 0
+    }
+  ],
+  "speedLimits": [
+    {
+      "fromM": 0,
+      "toM": 15000,
+      "kmh": 130,
+      "kind": "permanent"
+    }
+  ],
+  "stations": [
+    {
+      "id": "RMP",
+      "name": "Rampur",
+      "localName": "रामपुर",
+      "stopMarkM": 5200,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -5.8,
+          "widthM": 2.9
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    },
+    {
+      "id": "DVG",
+      "name": "Devgarh",
+      "localName": "देवगढ़",
+      "stopMarkM": 12000,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -5.8,
+          "widthM": 2.9
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "id": "DA10",
+      "label": "Automatic DA10",
+      "kind": "automatic",
+      "chainageM": 600,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A1",
+      "label": "Automatic A1",
+      "kind": "automatic",
+      "chainageM": 900
+    },
+    {
+      "id": "DA9",
+      "label": "Automatic DA9",
+      "kind": "automatic",
+      "chainageM": 2100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A2",
+      "label": "Automatic A2",
+      "kind": "automatic",
+      "chainageM": 2400
+    },
+    {
+      "id": "RMP-D",
+      "label": "Distant RMP",
+      "kind": "distant",
+      "chainageM": 3200
+    },
+    {
+      "id": "DA8",
+      "label": "Automatic DA8",
+      "kind": "automatic",
+      "chainageM": 3600,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "RMP-H",
+      "label": "Home RMP",
+      "kind": "home",
+      "chainageM": 4400,
+      "stationId": "RMP"
+    },
+    {
+      "id": "DA7",
+      "label": "Automatic DA7",
+      "kind": "automatic",
+      "chainageM": 5100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "RMP-LS",
+      "label": "Loop Starter RMP",
+      "kind": "starter",
+      "chainageM": 5250,
+      "line": "LOOP-RMP",
+      "stationId": "RMP"
+    },
+    {
+      "id": "RMP-S",
+      "label": "Starter RMP",
+      "kind": "starter",
+      "chainageM": 5250,
+      "stationId": "RMP"
+    },
+    {
+      "id": "RMP-AS",
+      "label": "Advanced Starter RMP",
+      "kind": "advanced-starter",
+      "chainageM": 5800
+    },
+    {
+      "id": "DA6",
+      "label": "Automatic DA6",
+      "kind": "automatic",
+      "chainageM": 6600,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A3",
+      "label": "Automatic A3",
+      "kind": "automatic",
+      "chainageM": 6900
+    },
+    {
+      "id": "DA5",
+      "label": "Automatic DA5",
+      "kind": "automatic",
+      "chainageM": 8100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A4",
+      "label": "Automatic A4",
+      "kind": "automatic",
+      "chainageM": 8400
+    },
+    {
+      "id": "DA4",
+      "label": "Automatic DA4",
+      "kind": "automatic",
+      "chainageM": 9600,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "DVG-D",
+      "label": "Distant DVG",
+      "kind": "distant",
+      "chainageM": 10000
+    },
+    {
+      "id": "DA3",
+      "label": "Automatic DA3",
+      "kind": "automatic",
+      "chainageM": 11100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "DVG-H",
+      "label": "Home DVG",
+      "kind": "home",
+      "chainageM": 11200,
+      "stationId": "DVG"
+    },
+    {
+      "id": "DVG-LS",
+      "label": "Loop Starter DVG",
+      "kind": "starter",
+      "chainageM": 12050,
+      "line": "LOOP-DVG",
+      "stationId": "DVG"
+    },
+    {
+      "id": "DVG-S",
+      "label": "Starter DVG",
+      "kind": "starter",
+      "chainageM": 12050,
+      "stationId": "DVG"
+    },
+    {
+      "id": "DVG-AS",
+      "label": "Advanced Starter DVG",
+      "kind": "advanced-starter",
+      "chainageM": 12600
+    },
+    {
+      "id": "DA2",
+      "label": "Automatic DA2",
+      "kind": "automatic",
+      "chainageM": 12600,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "DA1",
+      "label": "Automatic DA1",
+      "kind": "automatic",
+      "chainageM": 14100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A5",
+      "label": "Automatic A5",
+      "kind": "automatic",
+      "chainageM": 14400
+    }
+  ],
+  "lines": [
+    {
+      "id": "UP",
+      "name": "Up main",
+      "fromM": 0,
+      "toM": 15000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": -2.65
+        }
+      ]
+    },
+    {
+      "id": "DN",
+      "name": "Down main",
+      "fromM": 0,
+      "toM": 15000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": 2.65
+        }
+      ]
+    },
+    {
+      "id": "LOOP-RMP",
+      "name": "Rampur loop",
+      "fromM": 4550,
+      "toM": 5400,
+      "offsets": [
+        {
+          "atM": 4550,
+          "offsetM": -2.65
+        },
+        {
+          "atM": 4670,
+          "offsetM": -9
+        },
+        {
+          "atM": 5280,
+          "offsetM": -9
+        },
+        {
+          "atM": 5400,
+          "offsetM": -2.65
+        }
+      ],
+      "speedLimitKmh": 30
+    },
+    {
+      "id": "LOOP-DVG",
+      "name": "Devgarh loop",
+      "fromM": 11350,
+      "toM": 12200,
+      "offsets": [
+        {
+          "atM": 11350,
+          "offsetM": -2.65
+        },
+        {
+          "atM": 11470,
+          "offsetM": -9
+        },
+        {
+          "atM": 12080,
+          "offsetM": -9
+        },
+        {
+          "atM": 12200,
+          "offsetM": -2.65
+        }
+      ],
+      "speedLimitKmh": 30
+    }
+  ],
+  "loops": [
+    {
+      "stationId": "RMP",
+      "lineId": "LOOP-RMP",
+      "mainLineId": "UP",
+      "dir": 1,
+      "fromM": 4550,
+      "toM": 5400
+    },
+    {
+      "stationId": "DVG",
+      "lineId": "LOOP-DVG",
+      "mainLineId": "UP",
+      "dir": 1,
+      "fromM": 11350,
+      "toM": 12200
+    }
+  ]
+}

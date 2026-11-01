@@ -1,0 +1,23 @@
+{
+  "id": "g-class",
+  "name": "G-class freight electric (generic)",
+  "traction": "electric",
+  "massT": 123,
+  "lengthM": 20.6,
+  "powerKW": 4500,
+  "maxTractiveEffortKN": 475,
+  "maxSpeedKmh": 100,
+  "notches": 8,
+  "adhesionDry": 0.32,
+  "independentBrakeRatio": 0.15,
+  "resistance": {
+    "a": 1.348,
+    "b": 0.02153,
+    "c": 0.0000836,
+    "starting": 6
+  },
+  "rotatingMassFraction": 0.2,
+  "gameTractionBoost": 1.7,
+  "source": "docs/research/02-train-physics.md (WAG-9-like freight electric: 123-132 t, ~4.5 MW, 450-510 kN, 100 km/h)",
+  "note": "Original generic loco; approximate. gameTractionBoost is a gameplay choice."
+}

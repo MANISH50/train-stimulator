@@ -1,7 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LocoSchema, RakeSchema, RouteSchema } from '../src/content/schema';
+import {
+  LevelSchema,
+  LocoSchema,
+  RakeSchema,
+  RouteSchema,
+  TrainTypeSchema,
+} from '../src/content/schema';
+import { LEVELS, levelSetup } from '../src/content/catalog';
 import { Track, newSample } from '../src/sim/track/track';
 import { ROUTE } from './helpers';
 
@@ -9,6 +16,8 @@ const cases = [
   ['content/locos', LocoSchema],
   ['content/rakes', RakeSchema],
   ['content/routes', RouteSchema],
+  ['content/trains', TrainTypeSchema],
+  ['content/levels', LevelSchema],
 ] as const;
 
 describe('content files', () => {
@@ -21,6 +30,11 @@ describe('content files', () => {
     }
   }
 
+  it('every level resolves to a runnable setup and all five are listed', () => {
+    expect(LEVELS.map((l) => l.id)).toEqual(['training', 'intercity', 'suburban', 'mail', 'goods']);
+    for (const level of LEVELS) expect(levelSetup(level, 'clear').route.id).toBe(level.routeId);
+  });
+
   it('rejects a signal beyond the end of track', () => {
     const bad = { ...ROUTE, signals: [{ ...ROUTE.signals[0]!, chainageM: 99999 }] };
     expect(RouteSchema.safeParse(bad).success).toBe(false);
@@ -31,7 +45,7 @@ describe('track geometry', () => {
   const track = new Track(ROUTE);
 
   it('has the summed segment length', () => {
-    expect(track.length).toBe(4200);
+    expect(track.length).toBe(6000);
   });
 
   it('turns left through the first curve by length/radius radians', () => {

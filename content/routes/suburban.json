@@ -1,0 +1,322 @@
+{
+  "id": "suburban",
+  "name": "Suburban line",
+  "note": "Original fictional 7.5 km suburban double line, four stations ~1.5 km apart.",
+  "fictional": true,
+  "startChainageM": 0,
+  "segments": [
+    {
+      "type": "straight",
+      "lengthM": 2000
+    },
+    {
+      "type": "curve",
+      "lengthM": 700,
+      "radiusM": 900,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 1800
+    },
+    {
+      "type": "curve",
+      "lengthM": 600,
+      "radiusM": 1100,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 2400
+    }
+  ],
+  "gradients": [
+    {
+      "fromM": 0,
+      "grade": 0
+    }
+  ],
+  "speedLimits": [
+    {
+      "fromM": 0,
+      "toM": 7500,
+      "kmh": 100,
+      "kind": "permanent"
+    }
+  ],
+  "stations": [
+    {
+      "id": "NGR",
+      "name": "Nagar Road",
+      "localName": "नगर रोड",
+      "stopMarkM": 1500,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    },
+    {
+      "id": "KLN",
+      "name": "Kalina",
+      "localName": "कलीना",
+      "stopMarkM": 3000,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    },
+    {
+      "id": "BGH",
+      "name": "Bagh",
+      "localName": "बाग",
+      "stopMarkM": 4500,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    },
+    {
+      "id": "SGM",
+      "name": "Sangam",
+      "localName": "संगम",
+      "stopMarkM": 6000,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "id": "NGR-D",
+      "label": "Distant NGR",
+      "kind": "distant",
+      "chainageM": 700
+    },
+    {
+      "id": "NGR-H",
+      "label": "Home NGR",
+      "kind": "home",
+      "chainageM": 980,
+      "stationId": "NGR"
+    },
+    {
+      "id": "DA9",
+      "label": "Automatic DA9",
+      "kind": "automatic",
+      "chainageM": 1000,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "NGR-S",
+      "label": "Starter NGR",
+      "kind": "starter",
+      "chainageM": 1550,
+      "stationId": "NGR"
+    },
+    {
+      "id": "DA8",
+      "label": "Automatic DA8",
+      "kind": "automatic",
+      "chainageM": 1700,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "NGR-AS",
+      "label": "Advanced Starter NGR",
+      "kind": "advanced-starter",
+      "chainageM": 1950
+    },
+    {
+      "id": "KLN-D",
+      "label": "Distant KLN",
+      "kind": "distant",
+      "chainageM": 2200
+    },
+    {
+      "id": "DA7",
+      "label": "Automatic DA7",
+      "kind": "automatic",
+      "chainageM": 2400,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "KLN-H",
+      "label": "Home KLN",
+      "kind": "home",
+      "chainageM": 2480,
+      "stationId": "KLN"
+    },
+    {
+      "id": "KLN-S",
+      "label": "Starter KLN",
+      "kind": "starter",
+      "chainageM": 3050,
+      "stationId": "KLN"
+    },
+    {
+      "id": "DA6",
+      "label": "Automatic DA6",
+      "kind": "automatic",
+      "chainageM": 3100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "KLN-AS",
+      "label": "Advanced Starter KLN",
+      "kind": "advanced-starter",
+      "chainageM": 3450
+    },
+    {
+      "id": "BGH-D",
+      "label": "Distant BGH",
+      "kind": "distant",
+      "chainageM": 3700
+    },
+    {
+      "id": "DA5",
+      "label": "Automatic DA5",
+      "kind": "automatic",
+      "chainageM": 3800,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "BGH-H",
+      "label": "Home BGH",
+      "kind": "home",
+      "chainageM": 3980,
+      "stationId": "BGH"
+    },
+    {
+      "id": "DA4",
+      "label": "Automatic DA4",
+      "kind": "automatic",
+      "chainageM": 4500,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "BGH-S",
+      "label": "Starter BGH",
+      "kind": "starter",
+      "chainageM": 4550,
+      "stationId": "BGH"
+    },
+    {
+      "id": "BGH-AS",
+      "label": "Advanced Starter BGH",
+      "kind": "advanced-starter",
+      "chainageM": 4950
+    },
+    {
+      "id": "SGM-D",
+      "label": "Distant SGM",
+      "kind": "distant",
+      "chainageM": 5200
+    },
+    {
+      "id": "DA3",
+      "label": "Automatic DA3",
+      "kind": "automatic",
+      "chainageM": 5200,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "SGM-H",
+      "label": "Home SGM",
+      "kind": "home",
+      "chainageM": 5480,
+      "stationId": "SGM"
+    },
+    {
+      "id": "DA2",
+      "label": "Automatic DA2",
+      "kind": "automatic",
+      "chainageM": 5900,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "SGM-S",
+      "label": "Starter SGM",
+      "kind": "starter",
+      "chainageM": 6050,
+      "stationId": "SGM"
+    },
+    {
+      "id": "SGM-AS",
+      "label": "Advanced Starter SGM",
+      "kind": "advanced-starter",
+      "chainageM": 6450
+    },
+    {
+      "id": "DA1",
+      "label": "Automatic DA1",
+      "kind": "automatic",
+      "chainageM": 6600,
+      "line": "DN",
+      "dir": -1
+    }
+  ],
+  "lines": [
+    {
+      "id": "UP",
+      "name": "Up main",
+      "fromM": 0,
+      "toM": 7500,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": -2.65
+        }
+      ]
+    },
+    {
+      "id": "DN",
+      "name": "Down main",
+      "fromM": 0,
+      "toM": 7500,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": 2.65
+        }
+      ]
+    }
+  ],
+  "loops": []
+}

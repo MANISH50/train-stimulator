@@ -1,0 +1,22 @@
+{
+  "id": "superfast",
+  "name": "Superfast Express",
+  "class": "superfast",
+  "priority": 9,
+  "speciality": "130 km/h, top priority, few stops",
+  "locoId": "e-class",
+  "rakeId": "lhb-22",
+  "aiAccelMs2": 0.45,
+  "aiDecelMs2": 0.7,
+  "dwellS": 60,
+  "livery": {
+    "body": "#2c4a8c",
+    "stripe": "#d9dde3",
+    "roof": "#c9ced4"
+  },
+  "locoLivery": {
+    "body": "#203a70",
+    "stripe": "#e8b33a",
+    "roof": "#b9bfc2"
+  }
+}

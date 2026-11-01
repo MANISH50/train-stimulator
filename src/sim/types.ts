@@ -48,19 +48,120 @@ export interface RakeParams {
   /** Brake-cylinder first-order time constants (s). */
   bcApplyTauS: number;
   bcReleaseTauS: number;
+  /** Body style for rendering. */
+  style?: 'coach' | 'emu' | 'wagon';
   /** Speed of a service brake-pipe signal along the train (m/s); emergency is ~4x faster in the model. */
   brakeSignalSpeedMps: number;
 }
 
 export type Aspect = 'RED' | 'YELLOW' | 'DOUBLE_YELLOW' | 'GREEN';
 
+/** Direction of travel along the chainage: 1 = increasing (UP), -1 = decreasing (DN). */
+export type Dir = 1 | -1;
+
+export type SignalKind =
+  'distant' | 'home' | 'starter' | 'advanced-starter' | 'intermediate-block' | 'automatic';
+
 export interface SignalDef {
   id: string;
   label: string;
-  kind: 'distant' | 'home' | 'starter' | 'advanced-starter' | 'intermediate-block' | 'automatic';
+  kind: SignalKind;
   chainageM: number;
-  /** Aspect timeline in sim seconds; the last entry whose atS <= time applies. */
-  timeline: { atS: number; aspect: Aspect }[];
+  /** Line the signal stands beside (default "UP") and the direction it faces (default 1). */
+  line?: string;
+  dir?: Dir;
+  /** Station this home/starter signal belongs to (worked by the dispatcher). */
+  stationId?: string;
+  /** Scripted "line not clear": keep this signal at danger until this sim time (s). */
+  holdUntilS?: number;
+  /**
+   * Scripted aspect timeline in sim seconds; the last entry whose atS <= time applies.
+   * When absent the signal is worked by the interlocking (block occupancy and routes).
+   */
+  timeline?: { atS: number; aspect: Aspect }[];
+}
+
+/**
+ * A running line. All lines share the route's chainage; a line differs only by its lateral
+ * offset from the alignment (+ = right of increasing chainage), smoothly interpolated
+ * between keyframes. Loops diverge from and rejoin a main line through these offsets.
+ */
+export interface LineDef {
+  id: string;
+  name: string;
+  fromM: number;
+  toM: number;
+  offsets: { atM: number; offsetM: number }[];
+  /** Line speed limit, e.g. a station loop. */
+  speedLimitKmh?: number;
+}
+
+/** A station loop: trains routed into it leave `mainLineId` at fromM and rejoin at toM. */
+export interface LoopDef {
+  stationId: string;
+  lineId: string;
+  mainLineId: string;
+  dir: Dir;
+  fromM: number;
+  toM: number;
+}
+
+export type WeatherId = 'clear' | 'haze' | 'rain' | 'fog' | 'night';
+
+export type TrainClass = 'superfast' | 'express' | 'passenger' | 'suburban' | 'goods';
+
+export interface Livery {
+  body: string;
+  stripe: string;
+  roof: string;
+}
+
+/** A train type: loco + rake + operating character (priority, AI driving, looks). */
+export interface TrainType {
+  id: string;
+  name: string;
+  class: TrainClass;
+  /** Higher runs first: superfast > express > passenger/suburban > goods. */
+  priority: number;
+  speciality: string;
+  locoId: string;
+  rakeId: string;
+  /** AI driver: gentle acceleration and service deceleration (m/s²). */
+  aiAccelMs2: number;
+  aiDecelMs2: number;
+  /** Default dwell at stops (s). */
+  dwellS: number;
+  livery: Livery;
+  locoLivery: Livery;
+}
+
+export interface StopSpec {
+  stationId: string;
+  /** Timetabled arrival, seconds after the level starts. */
+  dueS?: number;
+  dwellS?: number;
+}
+
+export interface TrafficSpec {
+  id: string;
+  trainTypeId: string;
+  dir: Dir;
+  /** Sim time at which the train enters, and the chainage of its front when it does. */
+  spawnAtS: number;
+  spawnS: number;
+  stops: StopSpec[];
+}
+
+export interface LevelDef {
+  id: string;
+  order: number;
+  title: string;
+  subtitle: string;
+  detail: string;
+  routeId: string;
+  player: { trainTypeId: string; startS: number; stops: StopSpec[] };
+  traffic: TrafficSpec[];
+  defaultWeather: WeatherId;
 }
 
 export type TrackSegment =
@@ -79,9 +180,11 @@ export interface Station {
   name: string;
   /** Name in a regional script (e.g. Devanagari) for station boards. */
   localName?: string;
-  /** Chainage of the platform's stopping mark for the train front. */
+  /** Chainage of the platform's stopping mark for the front of an UP train. */
   stopMarkM: number;
   platformLengthM: number;
+  /** Platform slabs as lateral centre offset + width; defaults to one platform left of UP. */
+  platforms?: { offsetM: number; widthM: number }[];
 }
 
 export interface RouteDef {
@@ -95,6 +198,9 @@ export interface RouteDef {
   speedLimits: SpeedLimit[];
   stations: Station[];
   signals: SignalDef[];
+  /** Running lines; defaults to a single "UP" line on the alignment. */
+  lines?: LineDef[];
+  loops?: LoopDef[];
 }
 
 export interface Controls {

@@ -1,4 +1,5 @@
 import type { Controls } from '../types';
+import { DRY_ENV, type PhysicsEnv } from '../weather';
 import type { Track } from '../track/track';
 import { initialBrakes, stepBrakes, type BrakeState } from './brakes';
 import {
@@ -50,15 +51,16 @@ export function stepTrain(
   ctl: Controls,
   track: Track,
   dt: number,
+  env: PhysicsEnv = DRY_ENV,
 ): void {
   stepBrakes(st.brakes, c.rake, c.lengthM, ctl.autoBrake, ctl.indepBrake, ctl.emergency, dt);
 
   const demand = ctl.emergency || ctl.reverser === 0 ? 0 : tractiveEffortDemand(c, ctl.notch, st.v);
-  const rail = railTractiveEffort(c, demand, c.loco.adhesionDry);
+  const rail = railTractiveEffort(c, demand, c.loco.adhesionDry * env.adhesionFactor);
   st.wheelSlip = rail.slip;
   st.tractionN = rail.te * ctl.reverser;
 
-  const trainBrake = c.massKg * G * c.rake.brakeForceRatio * (st.brakes.bc / c.rake.bcMax);
+  const trainBrake = c.massKg * G * c.rake.brakeForceRatio * env.brakeFactor * (st.brakes.bc / c.rake.bcMax);
   const locoBrake = c.locoMassKg * G * c.loco.independentBrakeRatio * st.brakes.indep;
   st.brakeN = trainBrake + locoBrake;
 

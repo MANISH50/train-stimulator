@@ -1,0 +1,38 @@
+{
+  "id": "training",
+  "order": 1,
+  "title": "Training Ground",
+  "subtitle": "Mail Express · 18 coaches",
+  "detail": "Learn the basics: wait at the red home, stop at the platform, leave when the starter turns green.",
+  "routeId": "test-section",
+  "player": {
+    "trainTypeId": "mail-express",
+    "startS": 470,
+    "stops": [
+      {
+        "stationId": "PRS",
+        "dueS": 300,
+        "dwellS": 20
+      }
+    ]
+  },
+  "traffic": [
+    {
+      "id": "dn-superfast",
+      "trainTypeId": "superfast",
+      "dir": -1,
+      "spawnAtS": 30,
+      "spawnS": 5970,
+      "stops": []
+    },
+    {
+      "id": "dn-goods",
+      "trainTypeId": "goods",
+      "dir": -1,
+      "spawnAtS": 260,
+      "spawnS": 5970,
+      "stops": []
+    }
+  ],
+  "defaultWeather": "clear"
+}

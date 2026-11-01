@@ -1,0 +1,36 @@
+{
+  "id": "goods",
+  "order": 5,
+  "title": "Goods Train",
+  "subtitle": "~4,700 t freight · long braking",
+  "detail": "Heavy freight over a 1 in 150 climb. You are looped at Ghatpur while the passenger behind you overtakes.",
+  "routeId": "goods",
+  "player": {
+    "trainTypeId": "goods",
+    "startS": 700,
+    "stops": []
+  },
+  "traffic": [
+    {
+      "id": "up-passenger",
+      "trainTypeId": "passenger",
+      "dir": 1,
+      "spawnAtS": 30,
+      "spawnS": 400,
+      "stops": [
+        {
+          "stationId": "GHT"
+        }
+      ]
+    },
+    {
+      "id": "dn-superfast",
+      "trainTypeId": "superfast",
+      "dir": -1,
+      "spawnAtS": 60,
+      "spawnS": 9970,
+      "stops": []
+    }
+  ],
+  "defaultWeather": "clear"
+}

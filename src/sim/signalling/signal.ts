@@ -2,7 +2,7 @@ import type { Aspect, SignalDef } from '../types';
 
 export function aspectAt(sig: SignalDef, timeS: number): Aspect {
   let aspect: Aspect = 'RED';
-  for (const step of sig.timeline) {
+  for (const step of sig.timeline ?? []) {
     if (step.atS <= timeS) aspect = step.aspect;
     else break;
   }

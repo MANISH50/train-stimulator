@@ -3,7 +3,7 @@ import rake from '../content/rakes/coach-12.json';
 import route from '../content/routes/test-section.json';
 import { parseLoco, parseRake, parseRoute } from '../src/content/schema';
 import { Sim } from '../src/sim/sim';
-import type { RakeParams, RouteDef } from '../src/sim/types';
+import type { RakeParams, RouteDef, WeatherId } from '../src/sim/types';
 
 export const LOCO = parseLoco(loco);
 export const RAKE = parseRake(rake);
@@ -25,13 +25,19 @@ export function flatRoute(grade = 0): RouteDef {
 }
 
 export function makeSim(
-  opts: { route?: RouteDef; rake?: Partial<RakeParams>; startS?: number } = {},
+  opts: {
+    route?: RouteDef;
+    rake?: Partial<RakeParams>;
+    startS?: number;
+    weather?: WeatherId;
+  } = {},
 ): Sim {
   return new Sim({
     route: opts.route ?? flatRoute(),
     loco: LOCO,
     rake: { ...RAKE, ...opts.rake },
     startS: opts.startS ?? 1000,
+    weather: opts.weather,
   });
 }
 

@@ -13,16 +13,26 @@ function routeWithSignal(timeline: SignalDef['timeline'], extra: Partial<RouteDe
 
 describe('signal aspects', () => {
   it('follows its timeline', () => {
-    const sig = ROUTE.signals.find((s) => s.id === 'H1')!;
+    const sig: SignalDef = {
+      id: 'H1',
+      label: 'Home H1',
+      kind: 'home',
+      chainageM: 3000,
+      timeline: [
+        { atS: 0, aspect: 'RED' },
+        { atS: 150, aspect: 'YELLOW' },
+      ],
+    };
     expect(aspectAt(sig, 0)).toBe('RED');
     expect(aspectAt(sig, 149.9)).toBe('RED');
     expect(aspectAt(sig, 150)).toBe('YELLOW');
   });
 
   it('finds the next signal ahead', () => {
-    expect(nextSignal(ROUTE.signals, 0)?.id).toBe('D1');
-    expect(nextSignal(ROUTE.signals, 2500)?.id).toBe('H1');
-    expect(nextSignal(ROUTE.signals, 3500)).toBeNull();
+    const up = ROUTE.signals.filter((s) => (s.dir ?? 1) === 1);
+    expect(nextSignal(up, 0)?.id).toBe('A1');
+    expect(nextSignal(up, 2500)?.id).toBe('PRS-H');
+    expect(nextSignal(up, 4600)).toBeNull();
   });
 });
 

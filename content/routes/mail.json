@@ -1,0 +1,276 @@
+{
+  "id": "mail",
+  "name": "Mail line",
+  "note": "Original fictional 10 km double line; loop at Sitapur Junction for overtakes.",
+  "fictional": true,
+  "startChainageM": 0,
+  "segments": [
+    {
+      "type": "straight",
+      "lengthM": 2500
+    },
+    {
+      "type": "curve",
+      "lengthM": 900,
+      "radiusM": 1600,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 2600
+    },
+    {
+      "type": "curve",
+      "lengthM": 800,
+      "radiusM": 1400,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 3200
+    }
+  ],
+  "gradients": [
+    {
+      "fromM": 0,
+      "grade": 0
+    },
+    {
+      "fromM": 3000,
+      "grade": -0.003
+    },
+    {
+      "fromM": 4400,
+      "grade": 0
+    }
+  ],
+  "speedLimits": [
+    {
+      "fromM": 0,
+      "toM": 10000,
+      "kmh": 110,
+      "kind": "permanent"
+    }
+  ],
+  "stations": [
+    {
+      "id": "KPR",
+      "name": "Kalyanpur",
+      "localName": "कल्याणपुर",
+      "stopMarkM": 3200,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    },
+    {
+      "id": "STP",
+      "name": "Sitapur Junction",
+      "localName": "सीतापुर जंक्शन",
+      "stopMarkM": 7000,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -5.8,
+          "widthM": 2.9
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "id": "KPR-D",
+      "label": "Distant KPR",
+      "kind": "distant",
+      "chainageM": 1200
+    },
+    {
+      "id": "DA7",
+      "label": "Automatic DA7",
+      "kind": "automatic",
+      "chainageM": 1300,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "KPR-H",
+      "label": "Home KPR",
+      "kind": "home",
+      "chainageM": 2400,
+      "stationId": "KPR"
+    },
+    {
+      "id": "DA6",
+      "label": "Automatic DA6",
+      "kind": "automatic",
+      "chainageM": 2600,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "KPR-S",
+      "label": "Starter KPR",
+      "kind": "starter",
+      "chainageM": 3250,
+      "stationId": "KPR"
+    },
+    {
+      "id": "KPR-AS",
+      "label": "Advanced Starter KPR",
+      "kind": "advanced-starter",
+      "chainageM": 3800
+    },
+    {
+      "id": "DA5",
+      "label": "Automatic DA5",
+      "kind": "automatic",
+      "chainageM": 3900,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "STP-D",
+      "label": "Distant STP",
+      "kind": "distant",
+      "chainageM": 5000
+    },
+    {
+      "id": "DA4",
+      "label": "Automatic DA4",
+      "kind": "automatic",
+      "chainageM": 5200,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "STP-H",
+      "label": "Home STP",
+      "kind": "home",
+      "chainageM": 6200,
+      "stationId": "STP"
+    },
+    {
+      "id": "DA3",
+      "label": "Automatic DA3",
+      "kind": "automatic",
+      "chainageM": 6500,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "STP-LS",
+      "label": "Loop Starter STP",
+      "kind": "starter",
+      "chainageM": 7050,
+      "line": "LOOP-STP",
+      "stationId": "STP"
+    },
+    {
+      "id": "STP-S",
+      "label": "Starter STP",
+      "kind": "starter",
+      "chainageM": 7050,
+      "stationId": "STP"
+    },
+    {
+      "id": "STP-AS",
+      "label": "Advanced Starter STP",
+      "kind": "advanced-starter",
+      "chainageM": 7600
+    },
+    {
+      "id": "DA2",
+      "label": "Automatic DA2",
+      "kind": "automatic",
+      "chainageM": 7800,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A1",
+      "label": "Automatic A1",
+      "kind": "automatic",
+      "chainageM": 8700
+    },
+    {
+      "id": "DA1",
+      "label": "Automatic DA1",
+      "kind": "automatic",
+      "chainageM": 9100,
+      "line": "DN",
+      "dir": -1
+    }
+  ],
+  "lines": [
+    {
+      "id": "UP",
+      "name": "Up main",
+      "fromM": 0,
+      "toM": 10000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": -2.65
+        }
+      ]
+    },
+    {
+      "id": "DN",
+      "name": "Down main",
+      "fromM": 0,
+      "toM": 10000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": 2.65
+        }
+      ]
+    },
+    {
+      "id": "LOOP-STP",
+      "name": "Sitapur Junction loop",
+      "fromM": 6350,
+      "toM": 7200,
+      "offsets": [
+        {
+          "atM": 6350,
+          "offsetM": -2.65
+        },
+        {
+          "atM": 6470,
+          "offsetM": -9
+        },
+        {
+          "atM": 7080,
+          "offsetM": -9
+        },
+        {
+          "atM": 7200,
+          "offsetM": -2.65
+        }
+      ],
+      "speedLimitKmh": 30
+    }
+  ],
+  "loops": [
+    {
+      "stationId": "STP",
+      "lineId": "LOOP-STP",
+      "mainLineId": "UP",
+      "dir": 1,
+      "fromM": 6350,
+      "toM": 7200
+    }
+  ]
+}

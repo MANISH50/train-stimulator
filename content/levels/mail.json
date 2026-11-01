@@ -1,0 +1,43 @@
+{
+  "id": "mail",
+  "order": 4,
+  "title": "Mail / Passenger",
+  "subtitle": "Mail Express · held for an overtake",
+  "detail": "At Sitapur Junction you are routed into the loop and held at the loop starter until the Superfast behind you passes.",
+  "routeId": "mail",
+  "player": {
+    "trainTypeId": "mail-express",
+    "startS": 470,
+    "stops": [
+      {
+        "stationId": "KPR",
+        "dueS": 220,
+        "dwellS": 30
+      },
+      {
+        "stationId": "STP",
+        "dueS": 520,
+        "dwellS": 40
+      }
+    ]
+  },
+  "traffic": [
+    {
+      "id": "up-superfast",
+      "trainTypeId": "superfast",
+      "dir": 1,
+      "spawnAtS": 150,
+      "spawnS": 600,
+      "stops": []
+    },
+    {
+      "id": "dn-passenger",
+      "trainTypeId": "passenger",
+      "dir": -1,
+      "spawnAtS": 60,
+      "spawnS": 9970,
+      "stops": []
+    }
+  ],
+  "defaultWeather": "clear"
+}

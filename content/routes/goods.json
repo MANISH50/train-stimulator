@@ -1,0 +1,265 @@
+{
+  "id": "goods",
+  "name": "Ghat goods line",
+  "note": "Original fictional 10 km goods line with a 1 in 150 rise and fall and a crossing loop.",
+  "fictional": true,
+  "startChainageM": 0,
+  "segments": [
+    {
+      "type": "straight",
+      "lengthM": 2800
+    },
+    {
+      "type": "curve",
+      "lengthM": 1000,
+      "radiusM": 1200,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 2200
+    },
+    {
+      "type": "curve",
+      "lengthM": 900,
+      "radiusM": 1000,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 3100
+    }
+  ],
+  "gradients": [
+    {
+      "fromM": 0,
+      "grade": 0
+    },
+    {
+      "fromM": 1500,
+      "grade": 0.0067
+    },
+    {
+      "fromM": 3800,
+      "grade": 0
+    },
+    {
+      "fromM": 5800,
+      "grade": -0.0067
+    },
+    {
+      "fromM": 7600,
+      "grade": 0
+    }
+  ],
+  "speedLimits": [
+    {
+      "fromM": 0,
+      "toM": 10000,
+      "kmh": 100,
+      "kind": "permanent"
+    }
+  ],
+  "stations": [
+    {
+      "id": "GHT",
+      "name": "Ghatpur",
+      "localName": "घाटपुर",
+      "stopMarkM": 5000,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -5.8,
+          "widthM": 2.9
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "id": "DA7",
+      "label": "Automatic DA7",
+      "kind": "automatic",
+      "chainageM": 700,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A1",
+      "label": "Automatic A1",
+      "kind": "automatic",
+      "chainageM": 900
+    },
+    {
+      "id": "DA6",
+      "label": "Automatic DA6",
+      "kind": "automatic",
+      "chainageM": 2100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A2",
+      "label": "Automatic A2",
+      "kind": "automatic",
+      "chainageM": 2300
+    },
+    {
+      "id": "GHT-D",
+      "label": "Distant GHT",
+      "kind": "distant",
+      "chainageM": 3000
+    },
+    {
+      "id": "DA5",
+      "label": "Automatic DA5",
+      "kind": "automatic",
+      "chainageM": 3500,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "GHT-H",
+      "label": "Home GHT",
+      "kind": "home",
+      "chainageM": 4200,
+      "stationId": "GHT"
+    },
+    {
+      "id": "DA4",
+      "label": "Automatic DA4",
+      "kind": "automatic",
+      "chainageM": 4900,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "GHT-LS",
+      "label": "Loop Starter GHT",
+      "kind": "starter",
+      "chainageM": 5050,
+      "line": "LOOP-GHT",
+      "stationId": "GHT"
+    },
+    {
+      "id": "GHT-S",
+      "label": "Starter GHT",
+      "kind": "starter",
+      "chainageM": 5050,
+      "stationId": "GHT"
+    },
+    {
+      "id": "GHT-AS",
+      "label": "Advanced Starter GHT",
+      "kind": "advanced-starter",
+      "chainageM": 5600
+    },
+    {
+      "id": "DA3",
+      "label": "Automatic DA3",
+      "kind": "automatic",
+      "chainageM": 6300,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A3",
+      "label": "Automatic A3",
+      "kind": "automatic",
+      "chainageM": 6500
+    },
+    {
+      "id": "DA2",
+      "label": "Automatic DA2",
+      "kind": "automatic",
+      "chainageM": 7700,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A4",
+      "label": "Automatic A4",
+      "kind": "automatic",
+      "chainageM": 7900
+    },
+    {
+      "id": "DA1",
+      "label": "Automatic DA1",
+      "kind": "automatic",
+      "chainageM": 9100,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A5",
+      "label": "Automatic A5",
+      "kind": "automatic",
+      "chainageM": 9300
+    }
+  ],
+  "lines": [
+    {
+      "id": "UP",
+      "name": "Up main",
+      "fromM": 0,
+      "toM": 10000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": -2.65
+        }
+      ]
+    },
+    {
+      "id": "DN",
+      "name": "Down main",
+      "fromM": 0,
+      "toM": 10000,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": 2.65
+        }
+      ]
+    },
+    {
+      "id": "LOOP-GHT",
+      "name": "Ghatpur loop",
+      "fromM": 4350,
+      "toM": 5200,
+      "offsets": [
+        {
+          "atM": 4350,
+          "offsetM": -2.65
+        },
+        {
+          "atM": 4470,
+          "offsetM": -9
+        },
+        {
+          "atM": 5080,
+          "offsetM": -9
+        },
+        {
+          "atM": 5200,
+          "offsetM": -2.65
+        }
+      ],
+      "speedLimitKmh": 30
+    }
+  ],
+  "loops": [
+    {
+      "stationId": "GHT",
+      "lineId": "LOOP-GHT",
+      "mainLineId": "UP",
+      "dir": 1,
+      "fromM": 4350,
+      "toM": 5200
+    }
+  ]
+}
