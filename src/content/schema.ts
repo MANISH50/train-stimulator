@@ -120,6 +120,7 @@ export const RouteSchema = source
         }),
       )
       .optional(),
+    bufferStopM: z.number().min(0).optional(),
     loops: z
       .array(
         z.object({

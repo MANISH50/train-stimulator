@@ -1,7 +1,35 @@
+import type { CrashKind } from './crash/crashSim';
 import type { Aspect } from './types';
 
 export type SimEvent =
-  | { type: 'SPAD'; timeS: number; signalId: string; speedKmh: number }
+  | {
+      type: 'SPAD';
+      timeS: number;
+      signalId: string;
+      label: string;
+      speedKmh: number;
+      /** True when the run ends at once (accidents off); otherwise the train runs on. */
+      fatal: boolean;
+    }
+  | { type: 'SPAD_STOPPED'; timeS: number; label: string; beyondM: number }
+  | {
+      type: 'COLLISION';
+      timeS: number;
+      kind: CrashKind;
+      otherLabel?: string;
+      speedKmh: number;
+      closingKmh: number;
+    }
+  | {
+      type: 'DERAILMENT';
+      timeS: number;
+      cause: 'points' | 'curve';
+      speedKmh: number;
+      limitKmh: number;
+    }
+  | { type: 'BUFFER_BUMP'; timeS: number; speedKmh: number }
+  | { type: 'BUFFER_OVERRUN'; timeS: number; speedKmh: number }
+  | { type: 'CRASH_SETTLED'; timeS: number }
   | { type: 'SIGNAL_PASSED'; timeS: number; signalId: string; aspect: Aspect }
   | {
       type: 'SIGNAL_CLEARED';

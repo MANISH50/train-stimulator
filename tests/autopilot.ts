@@ -3,7 +3,16 @@
 import type { Sim } from '../src/sim/sim';
 import { stopMarkFor } from '../src/sim/traffic/mover';
 
-export function autopilot(sim: Sim): void {
+export interface DriverOptions {
+  /** Run through red signals (to provoke accidents). */
+  ignoreRed?: boolean;
+  /** Skip booked stops. */
+  ignoreStops?: boolean;
+  /** Hold this speed regardless of limits (km/h). */
+  speedKmh?: number;
+}
+
+export function autopilot(sim: Sim, opts: DriverOptions = {}): void {
   const c = sim.controls;
   c.indepBrake = 0;
   c.reverser = 1;
@@ -11,19 +20,28 @@ export function autopilot(sim: Sim): void {
   const v = sim.train.v;
   let authority = Infinity;
   const sig = sim.nextSignalView();
-  if (sig && sig.aspect === 'RED' && sig.def.kind !== 'distant') authority = sig.distM - 30;
+  if (!opts.ignoreRed && sig && sig.aspect === 'RED' && sig.def.kind !== 'distant') authority = sig.distM - 30;
   const stop = sim.playerNextStop();
-  if (stop && !stop.stop.done) authority = Math.min(authority, stopMarkFor(stop.station, 1) - s);
+  if (!opts.ignoreStops && stop && !stop.stop.done) authority = Math.min(authority, stopMarkFor(stop.station, 1) - s);
 
   // Plan braking well inside what the rake can do (goods trains brake far less).
   const planDecel = Math.min(0.35, sim.consist.rake.brakeForceRatio * 9.81 * 0.5);
   // Anticipate the time the air brake takes to build up along the train.
   const lagS = 2 + sim.consist.rake.bcApplyTauS * 1.5;
   authority -= Math.max(0, v) * lagS * 0.5;
-  const limit = (sim.currentLimitKmh() - 4) / 3.6;
+  const limit = (opts.speedKmh ?? sim.currentLimitKmh() - 4) / 3.6;
   const curve =
     authority === Infinity ? Infinity : Math.sqrt(2 * planDecel * Math.max(0, authority));
-  const target = Math.min(limit, curve);
+  let target = Math.min(limit, curve);
+  // Slow down in time for loop points ahead (their limit applies from the turnout).
+  for (const loop of sim.net.loops) {
+    if (!sim.player.loopRoutes.has(loop.stationId) || loop.fromM <= s) continue;
+    const lim = sim.net.speedLimitKmh(loop.lineId);
+    if (lim === undefined || opts.speedKmh !== undefined) continue;
+    const vLoop = (lim - 4) / 3.6;
+    const d = loop.fromM - s - Math.max(0, v) * lagS * 0.5;
+    target = Math.min(target, Math.sqrt(vLoop * vLoop + 2 * planDecel * Math.max(0, d)));
+  }
   if (authority < 3) {
     c.notch = 0;
     c.autoBrake = 1;
@@ -40,11 +58,16 @@ export function autopilot(sim: Sim): void {
 }
 
 /** Run the sim with the autopilot for up to `seconds`, collecting events. */
-export function drive(sim: Sim, seconds: number, until?: () => boolean) {
+export function drive(
+  sim: Sim,
+  seconds: number,
+  until?: () => boolean,
+  opts: DriverOptions = {},
+) {
   const events: ReturnType<Sim['drainEvents']> = [];
   const steps = Math.round(seconds * 60);
   for (let i = 0; i < steps && sim.status === 'running'; i++) {
-    autopilot(sim);
+    autopilot(sim, opts);
     sim.step();
     events.push(...sim.drainEvents());
     if (until?.()) break;

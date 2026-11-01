@@ -1,6 +1,12 @@
 import type { RailNetwork } from '../track/network';
 import type { Dir, Station, StopSpec, TrainClass } from '../types';
 
+/**
+ * Two tracks closer than this (centre to centre) foul each other: a vehicle on one would strike
+ * a vehicle on the other (body width 3.2 m plus clearance).
+ */
+export const FOULING_M = 3.4;
+
 /** Window around a stop mark inside which a stopped train counts as at the platform (m). */
 export const STOP_WINDOW_M = 30;
 
@@ -53,7 +59,11 @@ export function makeStops(
   return stops;
 }
 
-/** Lines a mover covers: sampled along its length so trains on a turnout occupy both lines. */
+/**
+ * Whether a mover covers `lineId` between two chainages: sampled along its length, so a train
+ * on a turnout occupies both lines, and a train foul of a line (too close to it laterally,
+ * e.g. still on the points) counts as occupying it.
+ */
 export function occupies(
   m: Mover,
   net: RailNetwork,
@@ -70,7 +80,13 @@ export function occupies(
   const n = Math.max(1, Math.ceil(m.lengthM / step));
   for (let i = 0; i <= n; i++) {
     const s = front - m.dir * Math.min(m.lengthM, i * step);
-    if (s >= lo && s <= hi && net.lineFor(m.dir, m.loopRoutes, s) === lineId) return true;
+    if (s < lo || s > hi) continue;
+    const own = net.lineFor(m.dir, m.loopRoutes, s);
+    if (own === lineId) return true;
+    const line = net.line(lineId);
+    if (line && s >= line.fromM && s <= line.toM) {
+      if (Math.abs(net.offsetAt(own, s) - net.offsetAt(lineId, s)) < FOULING_M) return true;
+    }
   }
   return false;
 }

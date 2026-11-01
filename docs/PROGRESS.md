@@ -117,3 +117,5 @@
 - 2026-11-01T15:04:24.651Z — Claude needs your permission to use ExitPlanMode
 - 2026-11-01T15:39:22.340Z — Claude needs your permission to use ExitPlanMode
 - 2026-11-01T15:40:40.667Z — Claude needs your permission to use ExitPlanMode
+- 2026-11-01T17:08:50.251Z — Claude needs your permission to use AskUserQuestion
+- 2026-11-01T17:10:58.446Z — Claude needs your permission to use ExitPlanMode

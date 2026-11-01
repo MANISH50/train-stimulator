@@ -26,6 +26,8 @@ interface StationSpec {
   loop?: boolean;
   /** Scripted "line not clear" hold on the home signal until this sim time (s). */
   homeHoldUntilS?: number;
+  /** Dead-end terminus: no starters; the line ends at a buffer stop beyond the platform. */
+  terminus?: boolean;
 }
 
 interface RouteSpec {
@@ -42,6 +44,10 @@ interface RouteSpec {
   distantM?: number;
   homeM?: number;
   advancedM?: number;
+  /** Distance from the loop points to the stop mark (m); long enough to clear the longest train. */
+  loopApproachM?: number;
+  /** Buffer stop face (m), for a route ending at a terminus. */
+  bufferStopM?: number;
 }
 
 function build(spec: RouteSpec): RouteDef & { note: string } {
@@ -57,6 +63,7 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
   const distantM = spec.distantM ?? 2000;
   const homeM = spec.homeM ?? 800;
   const advancedM = spec.advancedM ?? 600;
+  const approach = spec.loopApproachM ?? 650;
 
   for (const st of spec.stations) {
     const x = st.stopMarkM;
@@ -83,11 +90,11 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
       lines.push({
         id: loopId,
         name: `${st.name} loop`,
-        fromM: x - 650,
+        fromM: x - approach,
         toM: x + 200,
         offsets: [
-          { atM: x - 650, offsetM: UP },
-          { atM: x - 530, offsetM: LOOP },
+          { atM: x - approach, offsetM: UP },
+          { atM: x - approach + 120, offsetM: LOOP },
           { atM: x + 80, offsetM: LOOP },
           { atM: x + 200, offsetM: UP },
         ],
@@ -98,7 +105,7 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
         lineId: loopId,
         mainLineId: 'UP',
         dir: 1,
-        fromM: x - 650,
+        fromM: x - approach,
         toM: x + 200,
       });
       signals.push({
@@ -120,20 +127,24 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
         stationId: st.id,
         ...(st.homeHoldUntilS ? { holdUntilS: st.homeHoldUntilS } : {}),
       },
-      {
-        id: `${code}-S`,
-        label: `Starter ${code}`,
-        kind: 'starter',
-        chainageM: x + 50,
-        stationId: st.id,
-      },
-      {
-        id: `${code}-AS`,
-        label: `Advanced Starter ${code}`,
-        kind: 'advanced-starter',
-        chainageM: x + advancedM,
-      },
     );
+    if (!st.terminus) {
+      signals.push(
+        {
+          id: `${code}-S`,
+          label: `Starter ${code}`,
+          kind: 'starter',
+          chainageM: x + 50,
+          stationId: st.id,
+        },
+        {
+          id: `${code}-AS`,
+          label: `Advanced Starter ${code}`,
+          kind: 'advanced-starter',
+          chainageM: x + advancedM,
+        },
+      );
+    }
     reserved.push([x - distantM - 400, x + advancedM + 400]);
   }
 
@@ -176,6 +187,7 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
     signals,
     lines,
     loops,
+    ...(spec.bufferStopM !== undefined ? { bufferStopM: spec.bufferStopM } : {}),
   };
 }
 
@@ -245,14 +257,15 @@ const ROUTES: RouteSpec[] = [
   {
     id: 'suburban',
     name: 'Suburban line',
-    note: 'Original fictional 7.5 km suburban double line, four stations ~1.5 km apart.',
+    note: 'Original fictional 6 km suburban double line, four stations ~1.5 km apart, ending at a terminus with buffer stops.',
     segments: [
       straight(2000),
       curve(700, 900, 'left'),
       straight(1800),
       curve(600, 1100, 'right'),
-      straight(2400),
+      straight(985),
     ],
+    bufferStopM: 6070,
     gradients: [{ fromM: 0, grade: 0 }],
     lineSpeedKmh: 100,
     distantM: 800,
@@ -262,7 +275,7 @@ const ROUTES: RouteSpec[] = [
       { id: 'NGR', name: 'Nagar Road', localName: 'नगर रोड', stopMarkM: 1500 },
       { id: 'KLN', name: 'Kalina', localName: 'कलीना', stopMarkM: 3000 },
       { id: 'BGH', name: 'Bagh', localName: 'बाग', stopMarkM: 4500 },
-      { id: 'SGM', name: 'Sangam', localName: 'संगम', stopMarkM: 6000 },
+      { id: 'SGM', name: 'Sangam', localName: 'संगम', stopMarkM: 6000, terminus: true },
     ],
     autoSpacingM: 700,
   },
@@ -314,6 +327,10 @@ const ROUTES: RouteSpec[] = [
       { fromM: 7600, grade: 0 },
     ],
     lineSpeedKmh: 100,
+    // A 58-wagon rake is ~640 m: the points sit far enough back for it to clear the main line.
+    loopApproachM: 900,
+    distantM: 2300,
+    homeM: 1050,
     stations: [{ id: 'GHT', name: 'Ghatpur', localName: 'घाटपुर', stopMarkM: 5000, loop: true }],
     autoSpacingM: 1400,
   },

@@ -66,7 +66,7 @@ export function trainType(id: string): TrainType {
 }
 
 /** Everything the sim needs to run a level in the given weather. */
-export function levelSetup(level: LevelDef, weather: WeatherId): SimSetup {
+export function levelSetup(level: LevelDef, weather: WeatherId, accidents = false): SimSetup {
   const pt = trainType(level.player.trainTypeId);
   return {
     route: need(ROUTES, level.routeId, 'route'),
@@ -76,6 +76,8 @@ export function levelSetup(level: LevelDef, weather: WeatherId): SimSetup {
     playerType: pt,
     playerStops: level.player.stops,
     weather,
+    accidents,
+    seed: level.id,
     traffic: level.traffic.map((t) => {
       const type = trainType(t.trainTypeId);
       return {

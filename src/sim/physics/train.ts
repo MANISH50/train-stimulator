@@ -60,7 +60,8 @@ export function stepTrain(
   st.wheelSlip = rail.slip;
   st.tractionN = rail.te * ctl.reverser;
 
-  const trainBrake = c.massKg * G * c.rake.brakeForceRatio * env.brakeFactor * (st.brakes.bc / c.rake.bcMax);
+  const trainBrake =
+    c.massKg * G * c.rake.brakeForceRatio * env.brakeFactor * (st.brakes.bc / c.rake.bcMax);
   const locoBrake = c.locoMassKg * G * c.loco.independentBrakeRatio * st.brakes.indep;
   st.brakeN = trainBrake + locoBrake;
 

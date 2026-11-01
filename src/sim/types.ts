@@ -201,6 +201,8 @@ export interface RouteDef {
   /** Running lines; defaults to a single "UP" line on the alignment. */
   lines?: LineDef[];
   loops?: LoopDef[];
+  /** Buffer stop face on every line, for a route ending at a dead-end terminus (m). */
+  bufferStopM?: number;
 }
 
 export interface Controls {

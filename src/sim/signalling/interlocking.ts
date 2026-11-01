@@ -20,6 +20,8 @@ export interface RouteControl {
 
 export class Interlocking {
   private readonly aspects = new Map<string, Aspect>();
+  /** Emergency: every signal thrown to danger (after an accident). */
+  allDanger = false;
   /** Signals per direction, ordered from the far end so each signal's successor is done first. */
   private readonly ordered: Record<string, SignalDef[]>;
 
@@ -55,7 +57,8 @@ export class Interlocking {
   update(timeS: number, movers: readonly Mover[], control: RouteControl): void {
     for (const dirKey of ['1', '-1']) {
       for (const sig of this.ordered[dirKey]!) {
-        this.aspects.set(sig.id, this.compute(sig, timeS, movers, control));
+        const aspect = this.allDanger ? 'RED' : this.compute(sig, timeS, movers, control);
+        this.aspects.set(sig.id, aspect);
       }
     }
   }

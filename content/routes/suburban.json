@@ -1,7 +1,7 @@
 {
   "id": "suburban",
   "name": "Suburban line",
-  "note": "Original fictional 7.5 km suburban double line, four stations ~1.5 km apart.",
+  "note": "Original fictional 6 km suburban double line, four stations ~1.5 km apart, ending at a terminus with buffer stops.",
   "fictional": true,
   "startChainageM": 0,
   "segments": [
@@ -27,7 +27,7 @@
     },
     {
       "type": "straight",
-      "lengthM": 2400
+      "lengthM": 985
     }
   ],
   "gradients": [
@@ -39,7 +39,7 @@
   "speedLimits": [
     {
       "fromM": 0,
-      "toM": 7500,
+      "toM": 6085,
       "kmh": 100,
       "kind": "permanent"
     }
@@ -129,10 +129,10 @@
       "stationId": "NGR"
     },
     {
-      "id": "DA9",
-      "label": "Automatic DA9",
+      "id": "DA7",
+      "label": "Automatic DA7",
       "kind": "automatic",
-      "chainageM": 1000,
+      "chainageM": 985,
       "line": "DN",
       "dir": -1
     },
@@ -144,10 +144,10 @@
       "stationId": "NGR"
     },
     {
-      "id": "DA8",
-      "label": "Automatic DA8",
+      "id": "DA6",
+      "label": "Automatic DA6",
       "kind": "automatic",
-      "chainageM": 1700,
+      "chainageM": 1685,
       "line": "DN",
       "dir": -1
     },
@@ -164,10 +164,10 @@
       "chainageM": 2200
     },
     {
-      "id": "DA7",
-      "label": "Automatic DA7",
+      "id": "DA5",
+      "label": "Automatic DA5",
       "kind": "automatic",
-      "chainageM": 2400,
+      "chainageM": 2385,
       "line": "DN",
       "dir": -1
     },
@@ -186,10 +186,10 @@
       "stationId": "KLN"
     },
     {
-      "id": "DA6",
-      "label": "Automatic DA6",
+      "id": "DA4",
+      "label": "Automatic DA4",
       "kind": "automatic",
-      "chainageM": 3100,
+      "chainageM": 3085,
       "line": "DN",
       "dir": -1
     },
@@ -206,10 +206,10 @@
       "chainageM": 3700
     },
     {
-      "id": "DA5",
-      "label": "Automatic DA5",
+      "id": "DA3",
+      "label": "Automatic DA3",
       "kind": "automatic",
-      "chainageM": 3800,
+      "chainageM": 3785,
       "line": "DN",
       "dir": -1
     },
@@ -221,10 +221,10 @@
       "stationId": "BGH"
     },
     {
-      "id": "DA4",
-      "label": "Automatic DA4",
+      "id": "DA2",
+      "label": "Automatic DA2",
       "kind": "automatic",
-      "chainageM": 4500,
+      "chainageM": 4485,
       "line": "DN",
       "dir": -1
     },
@@ -242,18 +242,18 @@
       "chainageM": 4950
     },
     {
+      "id": "DA1",
+      "label": "Automatic DA1",
+      "kind": "automatic",
+      "chainageM": 5185,
+      "line": "DN",
+      "dir": -1
+    },
+    {
       "id": "SGM-D",
       "label": "Distant SGM",
       "kind": "distant",
       "chainageM": 5200
-    },
-    {
-      "id": "DA3",
-      "label": "Automatic DA3",
-      "kind": "automatic",
-      "chainageM": 5200,
-      "line": "DN",
-      "dir": -1
     },
     {
       "id": "SGM-H",
@@ -261,35 +261,6 @@
       "kind": "home",
       "chainageM": 5480,
       "stationId": "SGM"
-    },
-    {
-      "id": "DA2",
-      "label": "Automatic DA2",
-      "kind": "automatic",
-      "chainageM": 5900,
-      "line": "DN",
-      "dir": -1
-    },
-    {
-      "id": "SGM-S",
-      "label": "Starter SGM",
-      "kind": "starter",
-      "chainageM": 6050,
-      "stationId": "SGM"
-    },
-    {
-      "id": "SGM-AS",
-      "label": "Advanced Starter SGM",
-      "kind": "advanced-starter",
-      "chainageM": 6450
-    },
-    {
-      "id": "DA1",
-      "label": "Automatic DA1",
-      "kind": "automatic",
-      "chainageM": 6600,
-      "line": "DN",
-      "dir": -1
     }
   ],
   "lines": [
@@ -297,7 +268,7 @@
       "id": "UP",
       "name": "Up main",
       "fromM": 0,
-      "toM": 7500,
+      "toM": 6085,
       "offsets": [
         {
           "atM": 0,
@@ -309,7 +280,7 @@
       "id": "DN",
       "name": "Down main",
       "fromM": 0,
-      "toM": 7500,
+      "toM": 6085,
       "offsets": [
         {
           "atM": 0,
@@ -318,5 +289,6 @@
       ]
     }
   ],
-  "loops": []
+  "loops": [],
+  "bufferStopM": 6070
 }

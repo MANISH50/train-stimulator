@@ -112,7 +112,7 @@
       "id": "GHT-D",
       "label": "Distant GHT",
       "kind": "distant",
-      "chainageM": 3000
+      "chainageM": 2700
     },
     {
       "id": "DA5",
@@ -126,7 +126,7 @@
       "id": "GHT-H",
       "label": "Home GHT",
       "kind": "home",
-      "chainageM": 4200,
+      "chainageM": 3950,
       "stationId": "GHT"
     },
     {
@@ -229,15 +229,15 @@
     {
       "id": "LOOP-GHT",
       "name": "Ghatpur loop",
-      "fromM": 4350,
+      "fromM": 4100,
       "toM": 5200,
       "offsets": [
         {
-          "atM": 4350,
+          "atM": 4100,
           "offsetM": -2.65
         },
         {
-          "atM": 4470,
+          "atM": 4220,
           "offsetM": -9
         },
         {
@@ -258,7 +258,7 @@
       "lineId": "LOOP-GHT",
       "mainLineId": "UP",
       "dir": 1,
-      "fromM": 4350,
+      "fromM": 4100,
       "toM": 5200
     }
   ]
