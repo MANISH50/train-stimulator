@@ -22,6 +22,7 @@ export class Interlocking {
   private readonly aspects = new Map<string, Aspect>();
   /** Emergency: every signal thrown to danger (after an accident). */
   allDanger = false;
+  private readonly nextCache = new Map<SignalDef, Map<string, SignalDef | null>>();
   /** Signals per direction, ordered from the far end so each signal's successor is done first. */
   private readonly ordered: Record<string, SignalDef[]>;
 
@@ -41,8 +42,23 @@ export class Interlocking {
 
   /** Next stop signal ahead of `sig` on the line its route leads onto, if any. */
   nextSignal(sig: SignalDef, control: RouteControl): SignalDef | null {
-    const dir = signalDir(sig);
     const beyond = control.lineBeyond(sig);
+    // Depends only on the signal and the line its route leads onto: cached (static layout).
+    let byLine = this.nextCache.get(sig);
+    if (!byLine) {
+      byLine = new Map();
+      this.nextCache.set(sig, byLine);
+    }
+    let next = byLine.get(beyond);
+    if (next === undefined) {
+      next = this.findNext(sig, beyond);
+      byLine.set(beyond, next);
+    }
+    return next;
+  }
+
+  private findNext(sig: SignalDef, beyond: string): SignalDef | null {
+    const dir = signalDir(sig);
     let best: SignalDef | null = null;
     for (const s of this.ordered[String(dir)]!) {
       if (s === sig || s.kind === 'distant') continue;
