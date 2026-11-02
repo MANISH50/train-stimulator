@@ -7,7 +7,7 @@ import type { CrashKind } from './crashSim';
 
 /** Vehicle body width (m). */
 export const BODY_WIDTH_M = 3.2;
-const SAMPLE_M = 2;
+const SAMPLE_M = 6;
 /** Below this lateral offset between the two tracks at the contact, it is end-on. */
 const IN_LINE_M = 1;
 

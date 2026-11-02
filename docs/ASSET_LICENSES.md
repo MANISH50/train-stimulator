@@ -15,3 +15,5 @@ Every model, texture, sound and font must have a row here **before** it is added
 | zod | Library | npm `zod` | MIT | Colin McDonnell |
 
 No third-party binary assets are bundled yet. Planned: Noto Sans/Devanagari (OFL 1.1), CC0 sources (Poly Haven, ambientCG, Kenney) — see docs/research/04-prior-art-licensing.md.
+
+| Crash debris, sparks, dust and smoke, buffer stops; impact, crunch and screech sounds, SPAD alarm | Original, procedural (code in `src/render/crash/`, `src/render/world.ts`, `src/audio/audio.ts`) | Project licence | — |

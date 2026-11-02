@@ -1,16 +1,31 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import type { CrashSim } from '../sim/crash/crashSim';
 import type { Consist } from '../sim/physics/forces';
 import type { Sim } from '../sim/sim';
 import type { AiTrain } from '../sim/traffic/aiTrain';
 import type { Dir, TrainType } from '../sim/types';
+import { CrashEffects } from './crash/crashEffects';
+import { bodyMatrix } from './crash/pose';
 import { PRESETS, type QualityName, type QualityPreset } from './quality';
 import { buildTrack, frameAt, headingAt } from './trackMesh';
 import { TrainModel, type TrainLook } from './trainModel';
 import { Rain, WEATHER_LOOKS, buildStars, type WeatherLook } from './weather';
-import { SignalBank, buildGround, buildSpeedBoards, buildStations, buildTrees } from './world';
+import {
+  SignalBank,
+  buildBufferStops,
+  buildGround,
+  buildSpeedBoards,
+  buildStations,
+  buildTrees,
+  type BufferStop,
+} from './world';
 
-export type CameraMode = 'cab' | 'chase' | 'side' | 'top';
+/** 'crash' is the cinematic accident camera; it is not in the normal camera cycle. */
+export type CameraMode = 'cab' | 'chase' | 'side' | 'top' | 'crash';
+/** Accident camera angles: a slow orbit, then the replay angles in turn. */
+export type CrashAngle = 'orbit' | 'lineside' | 'high' | 'follow';
+export const CRASH_ANGLES: CrashAngle[] = ['lineside', 'high', 'follow'];
 
 export const CAMERA_MODES: CameraMode[] = ['cab', 'chase', 'side', 'top'];
 export const CAMERA_NAMES: Record<CameraMode, string> = {
@@ -18,6 +33,7 @@ export const CAMERA_NAMES: Record<CameraMode, string> = {
   chase: 'Chase view',
   side: 'Side view',
   top: 'Top view',
+  crash: 'Accident view',
 };
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -53,6 +69,14 @@ export class GameRenderer {
   private signals!: SignalBank;
   private platformLamps: THREE.Points | null = null;
   private readonly aiModels = new Map<string, TrainModel>();
+  private readonly effects = new CrashEffects();
+  private bufferStops: BufferStop[] = [];
+  private crashView: CrashSim | null = null;
+  /** Negative while a replay shows the approach before impact (s of crash time). */
+  private preRollS = 0;
+  crashAngle: CrashAngle = 'orbit';
+  private crashOrbit = 0;
+  private readonly m4 = new THREE.Matrix4();
   private readonly sun = new THREE.DirectionalLight(0xffe2b8, 2.6);
   private readonly hemi = new THREE.HemisphereLight(0xcfe3ff, 0x6b5a3a, 0.9);
   private readonly sky = new Sky();
@@ -92,7 +116,7 @@ export class GameRenderer {
 
     this.sky.scale.setScalar(4500);
     this.scene.add(this.sky, this.hemi, this.sun, this.sun.target, this.rain.lines, this.stars);
-    this.scene.add(this.world);
+    this.scene.add(this.world, this.effects.root);
     this.setSim(sim, playerType);
     this.applyPreset(this.preset);
     this.bindMouse();
@@ -110,6 +134,11 @@ export class GameRenderer {
     this.signals = new SignalBank(track, sim.net, sim.setup.route.signals);
     this.trees = buildTrees(track, this.preset);
     this.train = new TrainModel(sim.consist, lookFor(playerType, sim.consist, true));
+    this.bufferStops = buildBufferStops(track, sim.setup.route, sim.net);
+    this.crashView = null;
+    this.preRollS = 0;
+    this.crashAngle = 'orbit';
+    this.effects.setCrash(null);
     this.world.add(
       buildGround(track),
       buildTrack(track, sim.net),
@@ -118,6 +147,7 @@ export class GameRenderer {
       this.signals.root,
       this.trees,
       this.train.root,
+      ...this.bufferStops.map((b) => b.root),
     );
     this.train.setCabView(this.cameraMode === 'cab');
     this.applyWeather();
@@ -208,14 +238,41 @@ export class GameRenderer {
     return this.setCamera(CAMERA_MODES[(i + 1) % CAMERA_MODES.length]!);
   }
 
-  /** Draw the world for the player's train front at chainage `frontS` (already interpolated). */
-  render(frontS: number): void {
+  /**
+   * Show a crash (live or a replay) instead of the trains' normal running; null for none.
+   * `preRollS` < 0 shows the approach that many seconds before the impact.
+   */
+  showCrash(view: CrashSim | null, preRollS = 0): void {
+    this.crashView = view;
+    this.preRollS = Math.min(0, preRollS);
+    this.effects.setCrash(view && this.preRollS === 0 ? view : null);
+  }
+
+  /**
+   * Draw the world for the player's train front at chainage `frontS` (already interpolated).
+   * `crashDt` is the crash time that passed since the last frame (drives effects).
+   */
+  render(frontS: number, crashDt = 0): void {
     const { sim } = this;
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
     const track = sim.track;
-    this.train.update(track, frontS, 1, (s) => sim.net.offsetAt(sim.playerLineAt(s), s));
+    const view = this.crashView;
+    if (view && this.preRollS === 0) {
+      this.train.updateCrashed(track, view.vehiclesOf(sim.player.id), view.bogiesOf(sim.player.id));
+      this.effects.update(track, crashDt);
+      this.poseBufferStop(view);
+    } else if (view) {
+      // Replay pre-roll: the trains running in toward the impact point.
+      const spec = view.setup.trains[0]!;
+      const lines = new Set(spec.loopRoutes);
+      const f = spec.frontS + spec.v * this.preRollS;
+      this.train.update(track, f, 1, (s) => sim.net.offsetAt(sim.net.lineFor(1, lines, s), s));
+      this.poseBufferStop(null);
+    } else {
+      this.train.update(track, frontS, 1, (s) => sim.net.offsetAt(sim.playerLineAt(s), s));
+    }
     this.syncAi();
     this.signals.update((def) => sim.aspectOf(def));
 
@@ -224,6 +281,10 @@ export class GameRenderer {
     this.camera.up.copy(UP);
     let smooth = true;
     switch (this.cameraMode) {
+      case 'crash': {
+        smooth = this.crashCamera(dt);
+        break;
+      }
       case 'cab': {
         this.train.cab?.update(sim, now / 1000);
         this.train.cabView(this.camPos, this.tmp, this.cabYaw, CAB_BASE_PITCH + this.cabPitch);
@@ -273,6 +334,13 @@ export class GameRenderer {
       this.camera.position.lerp(this.camPos, 0.25);
     }
     this.snapNext = false;
+    if (this.effects.shake > 0.01 && view) {
+      const t = now / 1000;
+      const a = this.effects.shake;
+      this.camera.position.x += Math.sin(t * 47) * a * 0.3;
+      this.camera.position.y += Math.sin(t * 59 + 1) * a * 0.25;
+      this.camera.position.z += Math.sin(t * 53 + 2) * a * 0.3;
+    }
     this.camera.lookAt(this.camLook);
     this.sky.position.copy(this.camera.position);
     this.stars.position.copy(this.camera.position);
@@ -303,7 +371,16 @@ export class GameRenderer {
         this.world.add(model.root);
       }
       const dir: Dir = t.dir;
-      model.update(sim.track, t.frontS, dir, (s) => this.aiOffset(t, s));
+      const view = this.crashView;
+      const spec = view?.setup.trains.find((x) => x.owner === t.id);
+      if (view && spec && this.preRollS === 0) {
+        model.updateCrashed(sim.track, view.vehiclesOf(t.id), view.bogiesOf(t.id));
+      } else if (view && spec) {
+        const f = spec.frontS + spec.v * this.preRollS;
+        model.update(sim.track, f, dir, (s) => this.aiOffset(t, s));
+      } else {
+        model.update(sim.track, t.frontS, dir, (s) => this.aiOffset(t, s));
+      }
     }
     for (const [id, model] of this.aiModels) {
       if (alive.has(id)) continue;
@@ -313,11 +390,83 @@ export class GameRenderer {
     }
   }
 
+  /** Knock the buffer stop the train hit off its base, following the crash body. */
+  private poseBufferStop(view: CrashSim | null): void {
+    const body = view?.bufferBody;
+    for (const stop of this.bufferStops) {
+      const root = stop.root;
+      if (body && Math.abs(stop.offsetM - view!.setup.bufferStop!.y) < 1) {
+        bodyMatrix(this.sim.track, body, this.m4);
+        this.m4.decompose(root.position, root.quaternion, root.scale);
+      } else {
+        const base = root.userData['base'] as { p: THREE.Vector3; q: THREE.Quaternion };
+        root.position.copy(base.p);
+        root.quaternion.copy(base.q);
+        root.scale.set(1, 1, 1);
+      }
+    }
+  }
+
+  /** Cinematic accident camera around the impact point; returns whether to smooth. */
+  private crashCamera(dt: number): boolean {
+    const view = this.crashView;
+    const track = this.sim.track;
+    if (!view) return true;
+    const { s, y } = view.setup.impact;
+    frameAt(track, s, y, 2, this.camLook);
+    const h = headingAt(track, s);
+    const fx = Math.cos(h);
+    const fz = -Math.sin(h);
+    const rx = Math.sin(h);
+    const rz = Math.cos(h);
+    switch (this.crashAngle) {
+      case 'orbit': {
+        this.crashOrbit += dt * 0.18;
+        const a = this.crashOrbit + 2.2;
+        const r = 38;
+        this.camPos.set(
+          this.camLook.x + (Math.cos(a) * fx + Math.sin(a) * rx) * r,
+          this.camLook.y + 11,
+          this.camLook.z + (Math.cos(a) * fz + Math.sin(a) * rz) * r,
+        );
+        return true;
+      }
+      case 'lineside':
+        // Low, beside the line ahead of the impact, looking back along the approach.
+        this.camPos.set(
+          this.camLook.x + fx * 22 + rx * 18,
+          this.camLook.y + 2.5,
+          this.camLook.z + fz * 22 + rz * 18,
+        );
+        this.camLook.set(this.camLook.x - fx * 15, this.camLook.y, this.camLook.z - fz * 15);
+        return false;
+      case 'high':
+        this.camPos.set(
+          this.camLook.x - fx * 70 - rx * 60,
+          this.camLook.y + 85,
+          this.camLook.z - fz * 70 - rz * 60,
+        );
+        return false;
+      case 'follow': {
+        const loco = this.train.locoObject;
+        const back = this.tmp.set(-1, 0, 0).applyQuaternion(loco.quaternion);
+        this.camPos.set(
+          loco.position.x + back.x * 22 - rx * 14,
+          loco.position.y + 7,
+          loco.position.z + back.z * 22 - rz * 14,
+        );
+        this.camLook.copy(loco.position).setY(loco.position.y + 2);
+        return true;
+      }
+    }
+  }
+
   private aiOffset(t: AiTrain, s: number): number {
     return this.sim.net.offsetAt(this.sim.net.lineFor(t.dir, t.loopRoutes, s), s);
   }
 
   private disposeWorld(): void {
+    this.bufferStops = [];
     for (const model of this.aiModels.values()) model.dispose();
     this.aiModels.clear();
     this.world.traverse((o) => {
@@ -367,6 +516,9 @@ export class GameRenderer {
           this.sideAlong = clamp(this.sideAlong + dx * 0.4, 0, this.sim.consist.lengthM);
           break;
         case 'top':
+          break;
+        case 'crash':
+          this.crashOrbit -= dx * 0.005;
           break;
       }
     });

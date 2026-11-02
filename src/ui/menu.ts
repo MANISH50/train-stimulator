@@ -12,6 +12,8 @@ export interface MenuChoice {
   camera: CameraMode;
   quality: QualityName;
   weather: WeatherId;
+  /** Realistic consequences: SPADs and overspeed can end in a collision or derailment. */
+  accidents: boolean;
 }
 
 const CAMERAS: { id: CameraMode; label: string }[] = [
@@ -51,7 +53,13 @@ export class StartMenu {
 
   constructor(parent: HTMLElement, quality: QualityName) {
     const first = LEVELS[0]!;
-    this.choice = { levelId: first.id, camera: 'cab', quality, weather: first.defaultWeather };
+    this.choice = {
+      levelId: first.id,
+      camera: 'cab',
+      quality,
+      weather: first.defaultWeather,
+      accidents: true,
+    };
     this.el = document.createElement('div');
     this.el.className = 'menu';
     this.el.setAttribute('role', 'dialog');
@@ -108,6 +116,13 @@ export class StartMenu {
             <div class="seg">${CAMERAS.map((o) => `<button data-camera="${o.id}" class="${o.id === c.camera ? 'on' : ''}">${o.label}</button>`).join('')}</div>
           </div>
           <div>
+            <h3>Accidents</h3>
+            <div class="seg">
+              <button data-accidents="on" class="${c.accidents ? 'on' : ''}" title="Run a red signal and you keep going — into whatever is ahead. Overspeed on points derails.">On — real consequences</button>
+              <button data-accidents="off" class="${c.accidents ? '' : 'on'}" title="Training: the run stops the moment you pass a red signal.">Off — stop at once</button>
+            </div>
+          </div>
+          <div>
             <h3>Graphics</h3>
             <div class="seg">${QUALITIES.map((o) => `<button data-quality="${o.id}" class="${o.id === c.quality ? 'on' : ''}">${o.label}</button>`).join('')}</div>
           </div>
@@ -140,6 +155,12 @@ export class StartMenu {
     this.el.querySelectorAll<HTMLButtonElement>('[data-camera]').forEach((b) =>
       b.addEventListener('click', () => {
         this.choice.camera = b.dataset['camera'] as CameraMode;
+        this.render();
+      }),
+    );
+    this.el.querySelectorAll<HTMLButtonElement>('[data-accidents]').forEach((b) =>
+      b.addEventListener('click', () => {
+        this.choice.accidents = b.dataset['accidents'] === 'on';
         this.render();
       }),
     );

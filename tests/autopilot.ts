@@ -20,9 +20,11 @@ export function autopilot(sim: Sim, opts: DriverOptions = {}): void {
   const v = sim.train.v;
   let authority = Infinity;
   const sig = sim.nextSignalView();
-  if (!opts.ignoreRed && sig && sig.aspect === 'RED' && sig.def.kind !== 'distant') authority = sig.distM - 30;
+  if (!opts.ignoreRed && sig && sig.aspect === 'RED' && sig.def.kind !== 'distant')
+    authority = sig.distM - 30;
   const stop = sim.playerNextStop();
-  if (!opts.ignoreStops && stop && !stop.stop.done) authority = Math.min(authority, stopMarkFor(stop.station, 1) - s);
+  if (!opts.ignoreStops && stop && !stop.stop.done)
+    authority = Math.min(authority, stopMarkFor(stop.station, 1) - s);
 
   // Plan braking well inside what the rake can do (goods trains brake far less).
   const planDecel = Math.min(0.35, sim.consist.rake.brakeForceRatio * 9.81 * 0.5);
@@ -58,12 +60,7 @@ export function autopilot(sim: Sim, opts: DriverOptions = {}): void {
 }
 
 /** Run the sim with the autopilot for up to `seconds`, collecting events. */
-export function drive(
-  sim: Sim,
-  seconds: number,
-  until?: () => boolean,
-  opts: DriverOptions = {},
-) {
+export function drive(sim: Sim, seconds: number, until?: () => boolean, opts: DriverOptions = {}) {
   const events: ReturnType<Sim['drainEvents']> = [];
   const steps = Math.round(seconds * 60);
   for (let i = 0; i < steps && sim.status === 'running'; i++) {

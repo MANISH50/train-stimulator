@@ -113,13 +113,55 @@ test('every level and weather loads from the menu without errors', async ({ page
     await page.locator(`[data-weather="${weathers[i]}"]`).click();
     await page.locator('.menu [data-action="play"]').click();
     await expect.poll(() => page.evaluate(() => window.__game?.level)).toBe(levels[i]);
-    await expect
-      .poll(() => page.evaluate(() => window.__game?.sim.weatherId))
-      .toBe(weathers[i]);
+    await expect.poll(() => page.evaluate(() => window.__game?.sim.weatherId)).toBe(weathers[i]);
     await expect(page.locator('[data-k="sigName"]')).not.toHaveText('—');
     await page.waitForTimeout(500);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
   }
+  expect(errors).toEqual([]);
+});
+
+test('a crash shows the wreck, the inquiry card, a replay and a restart', async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.goto('/');
+  await page.locator('[data-level="suburban"]').click();
+  await page.locator('[data-accidents="on"]').click();
+  await page.locator('.menu [data-action="play"]').click();
+  await expect.poll(() => page.evaluate(() => window.__game?.level)).toBe('suburban');
+  // Run every red signal at full power until the EMU ahead is hit (stepped by script).
+  const kind = await page.evaluate(() => {
+    const s = window.__game!.sim;
+    for (let n = 0; s.status === 'running' && n < 60 * 300; n++) {
+      Object.assign(s.controls, { indepBrake: 0, autoBrake: 0, reverser: 1, notch: 8 });
+      s.step();
+    }
+    return s.accident?.kind;
+  });
+  expect(kind).toBe('rear-end');
+  await expect.poll(() => page.evaluate(() => window.__game?.camera)).toBe('crash');
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: 'test-results/crash-impact.png' });
+  // Software rendering is slow in CI: fast-forward the wreck until it settles.
+  await page.evaluate(() => {
+    const s = window.__game!.sim;
+    for (let n = 0; !s.crash!.settled && n < 60 * 20; n++) s.step();
+  });
+  const card = page.locator('.card.inquiry');
+  await expect(card).toBeVisible({ timeout: 60_000 });
+  await expect(card).toContainText('Rear-end collision');
+  await page.screenshot({ path: 'test-results/crash-inquiry.png' });
+
+  await page.keyboard.press('KeyR');
+  await expect.poll(() => page.evaluate(() => window.__game?.replaying)).toBe(true);
+  await expect(card).toBeHidden();
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: 'test-results/crash-replay.png' });
+
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => window.__game?.sim.status)).toBe('running');
   expect(errors).toEqual([]);
 });

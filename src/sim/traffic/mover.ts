@@ -1,5 +1,5 @@
 import type { RailNetwork } from '../track/network';
-import type { Dir, Station, StopSpec, TrainClass } from '../types';
+import type { Dir, LineDef, Station, StopSpec, TrainClass } from '../types';
 
 /**
  * Two tracks closer than this (centre to centre) foul each other: a vehicle on one would strike
@@ -32,6 +32,10 @@ export interface Mover {
   /** Stations at which this train has been routed into the loop. */
   readonly loopRoutes: Set<string>;
   readonly stops: Map<string, StopState>;
+}
+
+function varies(line: LineDef | undefined): boolean {
+  return !!line && line.offsets.length > 1;
 }
 
 export function rearS(m: Mover): number {
@@ -77,14 +81,17 @@ export function occupies(
   const rear = rearS(m);
   if (Math.max(front, rear) < lo || Math.min(front, rear) > hi) return false;
   const step = 20;
+  const target = net.line(lineId);
+  const targetVaries = varies(target);
   const n = Math.max(1, Math.ceil(m.lengthM / step));
   for (let i = 0; i <= n; i++) {
     const s = front - m.dir * Math.min(m.lengthM, i * step);
     if (s < lo || s > hi) continue;
     const own = net.lineFor(m.dir, m.loopRoutes, s);
     if (own === lineId) return true;
-    const line = net.line(lineId);
-    if (line && s >= line.fromM && s <= line.toM) {
+    // Straight mains sit at fixed offsets and never foul each other; only loops (turnouts) can.
+    if (!targetVaries && !varies(net.line(own))) continue;
+    if (target && s >= target.fromM && s <= target.toM) {
       if (Math.abs(net.offsetAt(own, s) - net.offsetAt(lineId, s)) < FOULING_M) return true;
     }
   }

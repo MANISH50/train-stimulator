@@ -2,10 +2,12 @@
 // coaches, EMU cars and open goods wagons. Vehicles of the rake are instanced (one draw call
 // for all bodies, one for all bogies) so long goods trains stay cheap.
 import * as THREE from 'three';
+import type { CrashBody } from '../sim/crash/crashSim';
 import type { Consist } from '../sim/physics/forces';
 import type { Track } from '../sim/track/track';
 import type { Dir, Livery } from '../sim/types';
 import { CAB_EYE, CabInterior } from './cabInterior';
+import { bodyMatrix } from './crash/pose';
 import { mergeByMaterial } from './merge';
 import {
   coachSideTexture,
@@ -19,6 +21,8 @@ import { frameAt, type OffsetFn } from './trackMesh';
 const RAIL_TOP = 0.79;
 const BODY_W = 3.2;
 const yAxis = new THREE.Vector3(0, 1, 0);
+/** Wrecked bodies darken toward this colour with damage. */
+const SCORCH = new THREE.Color(0x2b2622);
 
 export type LocoStyle = 'electric' | 'diesel' | 'emu';
 export type RakeStyle = 'coach' | 'emu' | 'wagon';
@@ -55,6 +59,13 @@ export class TrainModel {
   private readonly m = new THREE.Matrix4();
   private readonly one = new THREE.Vector3(1, 1, 1);
   private readonly bogieOffsetM: number;
+  private readonly white = new THREE.Color(0xffffff);
+  private readonly tint = new THREE.Color();
+  private locoMats: { mat: THREE.MeshStandardMaterial; base: THREE.Color }[] | null = null;
+  private readonly hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+  private readonly vPos = new THREE.Vector3();
+  private readonly vQuat = new THREE.Quaternion();
+  private readonly vScale = new THREE.Vector3();
 
   constructor(consist: Consist, look: TrainLook) {
     this.root.name = 'train';
@@ -87,6 +98,7 @@ export class TrainModel {
     // Instances move every frame; their bounds are refreshed in update().
     this.bodies.frustumCulled = false;
     this.bogies.frustumCulled = false;
+    for (let i = 0; i < rake.vehicles; i++) this.bodies.setColorAt(i, this.white);
     for (let i = 0; i < rake.vehicles; i++) {
       this.rakePlacements.push({ offsetM: loco.lengthM + len * (i + 0.5), halfLengthM: len / 2 });
     }
@@ -104,6 +116,7 @@ export class TrainModel {
    * with `offset(s)` giving its line's lateral position.
    */
   update(track: Track, frontS: number, dir: Dir, offset: OffsetFn): void {
+    this.loco.scale.set(1, 1, 1);
     this.place(track, frontS, dir, offset, this.locoPlacement);
     this.loco.position.copy(this.tmpPos);
     this.loco.quaternion.copy(this.q);
@@ -123,6 +136,73 @@ export class TrainModel {
     });
     this.bodies.instanceMatrix.needsUpdate = true;
     this.bogies.instanceMatrix.needsUpdate = true;
+  }
+
+  /**
+   * Draw the train as wreckage from crash-sim bodies (index 0 = loco). Bogies follow their
+   * vehicle until they break away, then their own bodies.
+   */
+  updateCrashed(
+    track: Track,
+    bodies: readonly CrashBody[],
+    bogies: readonly (CrashBody | null)[],
+  ): void {
+    const loco = bodies[0];
+    if (loco) {
+      bodyMatrix(track, loco, this.m);
+      this.m.decompose(this.loco.position, this.loco.quaternion, this.loco.scale);
+      this.tintLoco(loco.damage);
+    }
+    this.rakePlacements.forEach((_, i) => {
+      const b = bodies[i + 1];
+      if (!b) return;
+      bodyMatrix(track, b, this.m);
+      this.bodies.setMatrixAt(i, this.m);
+      this.bodies.setColorAt(i, this.tint.copy(this.white).lerp(SCORCH, b.damage * 0.75));
+      this.m.decompose(this.vPos, this.vQuat, this.vScale);
+      for (const k of [0, 1] as const) {
+        const loose = bogies[(i + 1) * 2 + k];
+        if (loose) {
+          bodyMatrix(track, loose, this.m);
+        } else if (b.bogiesOff) {
+          this.m.copy(this.hidden);
+        } else {
+          this.bogiePos
+            .set((k === 0 ? 1 : -1) * this.bogieOffsetM, 0, 0)
+            .applyQuaternion(this.vQuat)
+            .add(this.vPos);
+          this.m.compose(this.bogiePos, this.vQuat, this.one);
+        }
+        this.bogies.setMatrixAt(i * 2 + k, this.m);
+      }
+    });
+    this.bodies.instanceMatrix.needsUpdate = true;
+    if (this.bodies.instanceColor) this.bodies.instanceColor.needsUpdate = true;
+    this.bogies.instanceMatrix.needsUpdate = true;
+  }
+
+  /** Back to an undamaged look (after a replay or restart reuses the model). */
+  clearDamage(): void {
+    this.loco.scale.set(1, 1, 1);
+    this.tintLoco(0);
+    for (let i = 0; i < this.rakePlacements.length; i++) this.bodies.setColorAt(i, this.white);
+    if (this.bodies.instanceColor) this.bodies.instanceColor.needsUpdate = true;
+  }
+
+  private tintLoco(damage: number): void {
+    if (!this.locoMats) {
+      this.locoMats = [];
+      const seen = new Set<THREE.Material>();
+      this.exterior.traverse((o) => {
+        const mats = (o as THREE.Mesh).material;
+        for (const mat of Array.isArray(mats) ? mats : mats ? [mats] : []) {
+          if (seen.has(mat) || !(mat instanceof THREE.MeshStandardMaterial)) continue;
+          seen.add(mat);
+          this.locoMats!.push({ mat, base: mat.color.clone() });
+        }
+      });
+    }
+    for (const { mat, base } of this.locoMats) mat.color.copy(base).lerp(SCORCH, damage * 0.7);
   }
 
   /** World-space seated eye position and look direction (yaw left +, pitch up +). */

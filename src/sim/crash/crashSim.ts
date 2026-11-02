@@ -664,11 +664,7 @@ export class CrashSim {
         }
         this.applyImpulse(A, rAx, rAy, -j * ux, -j * uy, h);
         this.applyImpulse(B, rBx, rBy, j * ux, j * uy, h);
-        if (
-          it === 0 &&
-          j / h > BUCKLE_FORCE_N &&
-          this.rng() < this.buckleChance(B)
-        ) {
+        if (it === 0 && j / h > BUCKLE_FORCE_N && this.rng() < this.buckleChance(B)) {
           this.buckle(A, B, this.severity);
         }
         if (capped && it === 0) {

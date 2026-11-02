@@ -106,6 +106,40 @@
 - Diesel and EMU figures are UNVERIFIED approximations.
 - Triangle count is dominated by instanced sleepers and could be reduced with sleeper LOD.
 
+## 2026-11-03: accidents — collisions, derailments, buffer stops
+
+**What was built**
+- **Accidents on/off** (menu, default on). With accidents on, a SPAD sounds an alarm and the train runs on: stopping gives a near-miss report; hitting something crashes. Off keeps the instant SPAD fail.
+- **Mishaps:**
+  - rear-end and head-on collisions;
+  - side collisions at points, e.g. leaving the Sitapur loop against the red loop starter while the Superfast passes;
+  - derailment above 1.6× the points' speed limit or above 2.5 m/s² unbalanced lateral acceleration on curves (game rules, approximate);
+  - buffer-stop overrun at the new Suburban terminus (Sangam); touching them at 8 km/h or less is only a bump.
+- **Crash simulation** (`src/sim/crash/`, deterministic):
+  - every vehicle is a rigid body, with couplers that buckle into a zig-zag, ends that crumple, override, tipping, bogies torn off and up to 160 debris pieces;
+  - all signals go to danger after an accident, and AI drivers brake (1.5 s reaction) when they sight a train that has run a red signal.
+- **Presentation:**
+  - slow-motion accident camera orbiting the impact; wreck poses, scorch tint, debris, sparks, dust and smoke, camera shake;
+  - synthesized impact, crunch and screech sounds and a SPAD alarm;
+  - accident inquiry card (cause, speeds, timeline, damage); R replays from a new angle with a 3 s approach pre-roll; Enter restarts.
+- Occupancy now counts a train foul of an adjacent line, so signals protect turnouts. The goods loop was lengthened so its 640 m rake clears the main line.
+
+**How it was verified**
+- `npm test`: crash tests cover:
+  - the SPAD flow, on and off;
+  - rear-end, side and buffer collisions;
+  - derailment at 55 km/h but not at 36 km/h on 30 km/h points;
+  - the near miss where the AI brakes in time;
+  - all signals at danger after an accident;
+  - finite poses, energy draining and settling within 15 s;
+  - identical replays.
+- `npm run test:e2e`: a scripted rear-end crash shows the accident camera, the inquiry card, the replay and the restart, with no console errors. Screenshots were taken of the rear-end wreck, the side collision, the derailment and the replay.
+
+**What remains**
+- Crash physics is a stylised approximation; its thresholds are game rules.
+- Crash visuals have not been timed at real FPS on a laptop GPU (headless software rendering runs at about 2 fps).
+- There is no head-on scenario yet: no level puts the player against opposing traffic on the same line.
+
 ## Resume here (Phase 2)
 1. Pre-departure checklist state machine (brake continuity test: BP 5.0 → 4.0 → Guard vents → 0; research 01 §11).
 2. VCD alerter (60 s + 8 s lamp + 8 s buzzer, then emergency) and Kavach-style warn/brake (+2 / +5 km/h).

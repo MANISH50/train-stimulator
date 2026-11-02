@@ -1,4 +1,6 @@
-// Fully synthesized audio (no sample files): traction hum, wheel rumble, brake hiss, air horn.
+// Fully synthesized audio (no sample files): traction hum, wheel rumble, brake hiss, air horn,
+// SPAD alarm and crash sounds (impact thump and crunch, metal screech while wreckage slides).
+import type { CrashSim } from '../sim/crash/crashSim';
 import type { Sim } from '../sim/sim';
 import { AirHorn } from './airHorn';
 
@@ -19,6 +21,12 @@ export class TrainAudio {
   private noise!: AudioBuffer;
   private lastJoint = 0;
   private lastBp = 5;
+  private alarmOsc: OscillatorNode | null = null;
+  private alarmGain: GainNode | null = null;
+  private screechGain: GainNode | null = null;
+  private screechFilter: BiquadFilterNode | null = null;
+  private crash: CrashSim | null = null;
+  private seenImpacts = 0;
 
   /** Browsers only allow audio after a user gesture; call from a key/click handler. */
   start(): void {
@@ -83,6 +91,102 @@ export class TrainAudio {
     });
   }
 
+  /** Two-tone SPAD alarm in the cab while `on`. */
+  alarm(on: boolean): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (!this.alarmOsc) {
+      this.alarmOsc = ctx.createOscillator();
+      this.alarmOsc.type = 'square';
+      this.alarmOsc.frequency.value = 960;
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 2500;
+      this.alarmGain = ctx.createGain();
+      this.alarmGain.gain.value = 0;
+      this.alarmOsc.connect(f).connect(this.alarmGain).connect(this.master);
+      this.alarmOsc.start();
+    }
+    const t = ctx.currentTime;
+    if (on) this.alarmOsc.frequency.setValueAtTime(Math.floor(t * 4) % 2 ? 770 : 960, t);
+    this.alarmGain!.gain.setTargetAtTime(on ? 0.06 : 0, t, 0.02);
+  }
+
+  /**
+   * Crash sounds for a crash (live or replay): a thump and crunch for each impact, and a
+   * screech while wreckage slides. Pass null when there is none.
+   */
+  updateCrash(crash: CrashSim | null): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (crash !== this.crash) {
+      this.crash = crash;
+      this.seenImpacts = 0;
+    }
+    if (!this.screechGain) {
+      this.screechFilter = ctx.createBiquadFilter();
+      this.screechFilter.type = 'bandpass';
+      this.screechFilter.frequency.value = 2600;
+      this.screechFilter.Q.value = 9;
+      this.screechGain = ctx.createGain();
+      this.screechGain.gain.value = 0;
+      const src = ctx.createBufferSource();
+      src.buffer = this.noise;
+      src.loop = true;
+      src.connect(this.screechFilter).connect(this.screechGain).connect(this.master);
+      src.start();
+    }
+    const t = ctx.currentTime;
+    if (!crash) {
+      this.screechGain.gain.setTargetAtTime(0, t, 0.1);
+      return;
+    }
+    const ring = crash.impacts.length;
+    const first = Math.max(this.seenImpacts, crash.impactCount - ring);
+    for (let i = first; i < crash.impactCount; i++) this.impact(crash.impacts[i % ring]!.strength);
+    this.seenImpacts = crash.impactCount;
+    let sliding = 0;
+    for (const b of crash.bodies) {
+      if (b.onRails || b.asleep || b.invMass === 0) continue;
+      sliding = Math.max(sliding, Math.hypot(b.vs, b.vy));
+    }
+    this.screechGain.gain.setTargetAtTime(Math.min(0.22, sliding / 60), t, 0.08);
+    this.screechFilter!.frequency.setTargetAtTime(1900 + sliding * 40, t, 0.1);
+  }
+
+  private impact(strength: number): void {
+    const ctx = this.ctx!;
+    const t = ctx.currentTime;
+    const level = Math.min(1, 0.25 + strength);
+    // Low thump.
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(70, t);
+    o.frequency.exponentialRampToValueAtTime(28, t + 0.6);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.7 * level, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(g).connect(this.master);
+    o.start(t);
+    o.stop(t + 1);
+    // Crunch: filtered noise bursts.
+    for (let k = 0; k < 3; k++) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noise;
+      const f = ctx.createBiquadFilter();
+      f.type = k === 0 ? 'lowpass' : 'bandpass';
+      f.frequency.value = k === 0 ? 900 : 1800 + k * 900;
+      const ng = ctx.createGain();
+      const t0 = t + k * 0.07;
+      const dur = k === 0 ? 1.2 : 0.25;
+      ng.gain.setValueAtTime(0.5 * level, t0);
+      ng.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      src.connect(f).connect(ng).connect(this.master);
+      src.start(t0, (k * 0.37) % 1.5, dur + 0.05);
+    }
+  }
+
   setInCab(inCab: boolean): void {
     this.inCab = inCab;
     this.horn?.setInCab(inCab);
@@ -99,7 +203,8 @@ export class TrainAudio {
     this.humOsc.frequency.setTargetAtTime(45 + v * 3.2 + notchFrac * 25, t, 0.3);
     this.humSub.frequency.setTargetAtTime(90 + v * 6.4, t, 0.3);
     this.humFilter.frequency.setTargetAtTime(250 + load * 900, t, 0.2);
-    this.humGain.gain.setTargetAtTime(0.02 + load * 0.09, t, 0.25);
+    const hum = sim.status === 'crashed' ? 0 : 0.02 + load * 0.09;
+    this.humGain.gain.setTargetAtTime(hum, t, 0.25);
 
     this.rumbleGain.gain.setTargetAtTime(Math.min(0.35, v / 40), t, 0.3);
 

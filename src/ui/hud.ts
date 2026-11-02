@@ -13,6 +13,18 @@ const WHY: Record<string, string> = {
   SPAD: 'Why this rule exists: a red signal protects the block section ahead — another train, a set of points or an obstruction may be there. Passing it at danger risks a collision, so it is treated as one of the most serious driving errors.',
   OVERSPEED:
     'Why this rule exists: speed limits reflect curves, track condition and work sites. A temporary restriction applies until the last vehicle has passed the termination board.',
+  DERAILMENT:
+    'Why this rule exists: the limit on points and curves keeps the sideways force on the wheels low enough for the flanges to hold the rails. Far above it, wheels climb the rail and the train leaves the track.',
+  BUFFER:
+    'Why this rule exists: at a dead-end terminus the line ends at buffer stops, which can only absorb a very slow touch. Approach terminal platforms slowly and stop well short of the buffers.',
+};
+
+const CRASH_TITLES: Record<string, string> = {
+  'rear-end': 'Rear-end collision',
+  'head-on': 'Head-on collision',
+  side: 'Side collision at the points',
+  derailment: 'Derailment',
+  buffer: 'Buffer-stop collision',
 };
 
 export interface PerfSample {
@@ -31,6 +43,9 @@ export class Hud {
   private bannerTimer = 0;
   /** Called for important notifications (e.g. a chime from the audio system). */
   onNotify: () => void = () => {};
+  /** Inquiry card buttons. */
+  onReplay: () => void = () => {};
+  onRestart: () => void = () => {};
 
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `
@@ -79,6 +94,7 @@ export class Hud {
       </div>
       <div class="toast" data-k="toast" role="status"></div>
       <div class="banner" data-k="banner" role="alert"><b data-k="bannerTitle"></b><span data-k="bannerText"></span></div>
+      <div class="flash" data-k="flash"></div>
       <div class="perf" data-k="perf" hidden></div>
       <div class="overlay" data-k="overlay" hidden></div>
       <div class="overlay help" data-k="help" hidden></div>
@@ -91,6 +107,8 @@ export class Hud {
     // ~15 Hz DOM updates keep layout cost low.
     if (realTimeS - this.lastUpdate < 1 / 15) return;
     this.lastUpdate = realTimeS;
+    this.root.classList.toggle('spadAlarm', !!sim.spad && sim.status === 'running');
+    this.root.classList.toggle('crashed', sim.status === 'crashed');
     const t = sim.train;
     const c = sim.controls;
     const kmh = Math.abs(t.v) * 3.6;
@@ -159,7 +177,51 @@ export class Hud {
     for (const e of events) {
       switch (e.type) {
         case 'SPAD':
+          if (e.fatal) {
+            this.showOverlay('Signal passed at danger', sim.failReason, WHY['SPAD']!);
+          } else {
+            this.banner(
+              `SPAD! ${e.label} passed at danger — STOP NOW`,
+              'Emergency brake (Backspace)! The line ahead is not clear: another train or the points may be in your path.',
+              'danger',
+              12000,
+            );
+          }
+          break;
+        case 'SPAD_STOPPED':
           this.showOverlay('Signal passed at danger', sim.failReason, WHY['SPAD']!);
+          break;
+        case 'COLLISION':
+          this.impactFlash();
+          this.banner(
+            e.kind === 'buffer'
+              ? 'You hit the buffer stop!'
+              : `COLLISION with the ${e.otherLabel ?? 'train ahead'}!`,
+            `Impact at ${e.closingKmh.toFixed(0)} km/h closing speed.`,
+            'danger',
+            5000,
+          );
+          break;
+        case 'DERAILMENT':
+          this.impactFlash();
+          this.banner(
+            'DERAILED!',
+            `${e.speedKmh.toFixed(0)} km/h where the limit was ${e.limitKmh} km/h.`,
+            'danger',
+            5000,
+          );
+          break;
+        case 'BUFFER_BUMP':
+          this.toast(
+            `Buffer stop touched at ${e.speedKmh.toFixed(0)} km/h — stop shorter next time`,
+            'warn',
+          );
+          break;
+        case 'BUFFER_OVERRUN':
+          this.showOverlay('Buffer stop overrun', sim.failReason, WHY['BUFFER']!);
+          break;
+        case 'CRASH_SETTLED':
+          this.showInquiry(sim);
           break;
         case 'OVERSPEED':
           this.toast(
@@ -241,13 +303,18 @@ export class Hud {
   }
 
   /** Large, longer-lived notification for things the driver must act on. */
-  banner(title: string, text: string, kind: 'info' | 'warn' | 'good'): void {
+  banner(
+    title: string,
+    text: string,
+    kind: 'info' | 'warn' | 'good' | 'danger',
+    durationMs = 7000,
+  ): void {
     const b = this.el['banner']!;
     this.el['bannerTitle']!.textContent = title;
     this.el['bannerText']!.textContent = text;
     b.className = `banner show ${kind}`;
     clearTimeout(this.bannerTimer);
-    this.bannerTimer = window.setTimeout(() => (b.className = 'banner'), 7000);
+    this.bannerTimer = window.setTimeout(() => (b.className = 'banner'), durationMs);
     this.onNotify();
   }
 
@@ -304,6 +371,88 @@ export class Hud {
 
   hideOverlay(): void {
     this.el['overlay']!.hidden = true;
+    this.root.classList.remove('spadAlarm');
+  }
+
+  /** Hide the overlay while a replay plays (the card returns when it ends). */
+  setOverlayVisible(on: boolean): void {
+    this.el['overlay']!.hidden = !on;
+  }
+
+  private impactFlash(): void {
+    const f = this.el['flash']!;
+    f.classList.remove('on');
+    void f.offsetWidth; // restart the animation
+    f.classList.add('on');
+  }
+
+  /** The accident inquiry: what happened, why, and what it cost. */
+  showInquiry(sim: Sim): void {
+    const a = sim.accident;
+    const crash = sim.crash;
+    if (!a || !crash) return;
+    const o = this.el['overlay']!;
+    o.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card inquiry';
+    const h = document.createElement('h2');
+    h.textContent = `Accident inquiry — ${CRASH_TITLES[a.kind] ?? 'Accident'}`;
+    const cause = document.createElement('p');
+    cause.className = 'cause';
+    cause.textContent = `Cause: ${a.cause}.`;
+    const rows: [string, string][] = [
+      ['Time', formatClock(CLOCK_START_S + a.timeS)],
+      ['Your speed at impact', `${a.speedKmh.toFixed(0)} km/h`],
+    ];
+    if (a.otherLabel) {
+      rows.push(['Other train', a.otherLabel]);
+      rows.push(['Closing speed', `${a.closingKmh.toFixed(0)} km/h`]);
+    }
+    if (a.limitKmh !== undefined) rows.push(['Speed limit there', `${a.limitKmh} km/h`]);
+    if (a.spad) {
+      rows.push([
+        'Timeline',
+        `SPAD at ${formatClock(CLOCK_START_S + a.spad.timeS)} → impact ${(a.timeS - a.spad.timeS).toFixed(0)} s later`,
+      ]);
+    }
+    rows.push(['Vehicles derailed', String(crash.derailedCount())]);
+    rows.push(['Bogies torn off', String(crash.detachedBogieCount())]);
+    rows.push(['Debris pieces', String(crash.debrisLaunched)]);
+    const table = document.createElement('table');
+    for (const [k, v] of rows) {
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td');
+      td1.textContent = k;
+      const td2 = document.createElement('td');
+      td2.textContent = v;
+      tr.append(td1, td2);
+      table.append(tr);
+    }
+    const why = document.createElement('p');
+    why.className = 'why';
+    why.textContent =
+      a.kind === 'derailment'
+        ? WHY['DERAILMENT']!
+        : a.kind === 'buffer' && !a.spad
+          ? WHY['BUFFER']!
+          : WHY['SPAD']!;
+    const buttons = document.createElement('div');
+    buttons.className = 'cardActions';
+    const replay = document.createElement('button');
+    replay.textContent = 'Replay crash (R)';
+    replay.dataset['action'] = 'replay';
+    replay.addEventListener('click', () => this.onReplay());
+    const restart = document.createElement('button');
+    restart.textContent = 'Restart (Enter)';
+    restart.dataset['action'] = 'restart';
+    restart.addEventListener('click', () => this.onRestart());
+    buttons.append(replay, restart);
+    const note = document.createElement('p');
+    note.className = 'keys';
+    note.textContent = 'Keys 1–4 look around the wreck · each replay shows a new angle.';
+    card.append(h, cause, table, why, buttons, note);
+    o.append(card);
+    o.hidden = false;
   }
 
   private showOverlay(title: string, body: string, why: string): void {

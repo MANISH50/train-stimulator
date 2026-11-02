@@ -3,8 +3,9 @@ import { LEVELS, levelById, levelSetup, trainType } from './content/catalog';
 import { Input } from './input/input';
 import { PRESETS, QUALITY_ORDER, detectQuality } from './render/quality';
 import { HornCodeDetector } from './input/hornCodes';
-import { CAMERA_NAMES, GameRenderer, type CameraMode } from './render/scene';
-import { FixedClock } from './sim/clock';
+import { CAMERA_NAMES, CRASH_ANGLES, GameRenderer, type CameraMode } from './render/scene';
+import { FixedClock, SIM_DT } from './sim/clock';
+import { CrashSim } from './sim/crash/crashSim';
 import { Sim } from './sim/sim';
 import type { LevelDef, WeatherId } from './sim/types';
 import { Hud } from './ui/hud';
@@ -12,7 +13,19 @@ import { StartMenu } from './ui/menu';
 
 let level: LevelDef = LEVELS[0]!;
 let weather: WeatherId = level.defaultWeather;
-let sim = new Sim(levelSetup(level, weather));
+let accidents = true;
+let sim = new Sim(levelSetup(level, weather, accidents));
+
+/** Slow motion for the first moments of a crash (crash seconds) and its rate. */
+const SLOWMO_S = 2.5;
+const SLOWMO_RATE = 0.3;
+/** A replay first shows this much of the approach (s), at half speed. */
+const REPLAY_PREROLL_S = 3;
+let crashShown = false;
+let replay: CrashSim | null = null;
+let replayPre = 0;
+let replayAcc = 0;
+let replayAngle = -1;
 const canvas = document.getElementById('scene') as HTMLCanvasElement;
 const renderer = new GameRenderer(
   canvas,
@@ -71,10 +84,12 @@ function closeMenu(): void {
 menu.onStart((choice, restartRequested) => {
   audio.start();
   if (choice.quality !== renderer.preset.name) renderer.applyPreset(PRESETS[choice.quality]);
-  const changed = choice.levelId !== level.id || choice.weather !== weather;
+  const changed =
+    choice.levelId !== level.id || choice.weather !== weather || choice.accidents !== accidents;
   if (changed || restartRequested || sim.status !== 'running' || !started) {
     level = levelById(choice.levelId);
     weather = choice.weather;
+    accidents = choice.accidents;
     restart();
   }
   started = true;
@@ -85,11 +100,32 @@ hud.onCameraButtons((mode) => showCamera(renderer.setCamera(mode)), openMenu);
 
 /** Start (or restart) the current level: new sim, rebuilt world. */
 function restart(): void {
-  sim = new Sim(levelSetup(level, weather));
+  sim = new Sim(levelSetup(level, weather, accidents));
   renderer.setSim(sim, trainType(level.player.trainTypeId));
   prevS = sim.train.s;
+  crashShown = false;
+  replay = null;
+  replayAngle = -1;
+  audio.updateCrash(null);
   hud.hideOverlay();
+  if (renderer.cameraMode === 'crash') showCamera(renderer.setCamera('chase'));
 }
+
+/** Replay the crash from the same setup, a new camera angle each time. */
+function startReplay(): void {
+  if (!sim.crashSetup) return;
+  replay = new CrashSim(sim.crashSetup, sim.track, sim.net);
+  replayPre = -REPLAY_PREROLL_S;
+  replayAcc = 0;
+  replayAngle = (replayAngle + 1) % CRASH_ANGLES.length;
+  renderer.crashAngle = CRASH_ANGLES[replayAngle]!;
+  renderer.setCamera('crash');
+  hud.setOverlayVisible(false);
+  hud.toast(`Replay — ${renderer.crashAngle} view`, 'info');
+}
+
+hud.onReplay = startReplay;
+hud.onRestart = restart;
 
 function handleActions(): void {
   const ctl = sim.controls;
@@ -122,7 +158,9 @@ function handleActions(): void {
         }
         break;
       case 'reverser':
-        if (stopped && ctl.notch === 0)
+        // After an accident R replays the crash; there is nothing left to drive.
+        if (sim.status === 'crashed') startReplay();
+        else if (stopped && ctl.notch === 0)
           ctl.reverser = ctl.reverser === 1 ? 0 : ctl.reverser === 0 ? -1 : 1;
         else hud.toast('Reverser: stop and close the throttle first', 'warn');
         break;
@@ -182,19 +220,32 @@ function frame(now: number): void {
   if (inMenu) renderer.orbit(dt);
 
   let alpha = 1;
+  let crashDt = 0;
   if (!frozen) {
-    const adv = clock.advance(dt);
+    const live = sim.crash;
+    const rate = live && !replay && live.timeS < SLOWMO_S ? SLOWMO_RATE : 1;
+    const adv = clock.advance(dt * rate);
     alpha = adv.alpha;
     for (let i = 0; i < adv.steps; i++) {
       prevS = sim.train.s;
       sim.step();
     }
+    if (live && !replay) crashDt = adv.steps * SIM_DT;
     hud.handleEvents(sim.drainEvents(), sim);
+    if (replay) crashDt = stepReplay(replay, dt);
   }
+  if (sim.crash && !crashShown) {
+    crashShown = true;
+    renderer.crashAngle = 'orbit';
+    showCamera(renderer.setCamera('crash'));
+  }
+  renderer.showCrash(replay ?? sim.crash, replay ? replayPre : 0);
+  audio.updateCrash(replay && replayPre < 0 ? null : (replay ?? sim.crash));
+  audio.alarm(!!sim.spad && sim.status === 'running');
   const frontS = prevS + (sim.train.s - prevS) * alpha;
 
   const t0 = performance.now();
-  renderer.render(frontS);
+  renderer.render(frontS, crashDt);
   frameMs = frameMs * 0.9 + (performance.now() - t0) * 0.1;
   hud.update(sim, frontS, now / 1000);
   const hornOn = input.isHeld('horn');
@@ -213,6 +264,24 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
+/** Advance a replay by real time `dt`; returns the crash time it advanced. */
+function stepReplay(r: CrashSim, dt: number): number {
+  const rate = replayPre < 0 ? 0.5 : r.timeS < SLOWMO_S ? SLOWMO_RATE : 1;
+  replayAcc += dt * rate;
+  let advanced = 0;
+  while (replayAcc >= SIM_DT) {
+    replayAcc -= SIM_DT;
+    if (replayPre < 0) {
+      replayPre = Math.min(0, replayPre + SIM_DT);
+    } else if (!r.settled) {
+      r.step(SIM_DT);
+      advanced += SIM_DT;
+    }
+  }
+  if (r.settled && replayPre === 0) hud.setOverlayVisible(true);
+  return advanced;
+}
+
 requestAnimationFrame(frame);
 
 // Read-only hook for automated tests and debugging.
@@ -223,6 +292,7 @@ declare global {
       readonly sim: Sim;
       readonly fps: number;
       readonly camera: string;
+      readonly replaying: boolean;
       readonly stats: { calls: number; triangles: number };
     };
   }
@@ -239,6 +309,9 @@ window.__game = {
   },
   get camera() {
     return renderer.cameraMode;
+  },
+  get replaying() {
+    return replay !== null && !replay.settled;
   },
   get stats() {
     return renderer.stats();

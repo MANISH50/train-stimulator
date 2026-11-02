@@ -29,6 +29,8 @@ Open http://localhost:5173 and press **F1** for the controls. The full key list 
 
 Weather: clear, summer haze, monsoon rain (wet rail), winter fog (short signal sighting) or night.
 
+**Accidents (on by default, toggle in the menu):** pass a red signal and you keep going into whatever is ahead. You may rear-end the train in front or be hit at the points by a passing express. Overspeed through loop points derails you, and the Suburban terminus has buffer stops. Crashes are simulated vehicle by vehicle and shown in slow motion, followed by an accident inquiry. Press R to replay from another angle.
+
 ## Phase 1: the Training Ground
 - A fictional 4.2 km section with curves and gradients, a temporary 50 km/h restriction, a distant signal, a home signal, and the Prashikshan Nagar platform.
 - Deterministic 60 Hz physics:

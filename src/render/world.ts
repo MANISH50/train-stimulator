@@ -224,6 +224,59 @@ export function buildStations(track: Track, route: RouteDef, net: RailNetwork): 
   return { group: all, lamps };
 }
 
+export interface BufferStop {
+  /** Origin at the track bed under the stop's centre, local +x along increasing chainage. */
+  root: THREE.Group;
+  offsetM: number;
+}
+
+/**
+ * Buffer stops at a dead-end terminus, one per main line: a steel frame with a yellow beam
+ * and a red lamp. Each is its own group so a crash can knock it off its base.
+ */
+export function buildBufferStops(track: Track, route: RouteDef, net: RailNetwork): BufferStop[] {
+  const at = route.bufferStopM;
+  if (at === undefined) return [];
+  const steel = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, metalness: 0.6, roughness: 0.5 });
+  const beam = new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.5 });
+  const lamp = new THREE.SpriteMaterial({
+    map: glowTexture(),
+    color: 0xff2a1a,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const out: BufferStop[] = [];
+  for (const line of net.lines) {
+    if (line.id !== 'UP' && line.id !== 'DN') continue;
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.3, 3.0), steel);
+    base.position.y = 0.15;
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 3.2), beam);
+    head.position.set(-1.3, 1.15, 0);
+    g.add(base, head);
+    for (const z of [-0.75, 0.75]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 0.3), steel);
+      post.position.set(-1.2, 0.7, z);
+      const strut = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.22, 0.22), steel);
+      strut.position.set(0, 0.75, z);
+      strut.rotation.z = -0.38;
+      g.add(post, strut);
+    }
+    const glow = new THREE.Sprite(lamp);
+    glow.scale.setScalar(0.6);
+    glow.position.set(-1.6, 1.7, 0);
+    g.add(glow);
+    g.traverse((o) => (o.castShadow = true));
+    const centre = at + 1.6;
+    const offsetM = net.offsetAt(line.id, centre);
+    frameAt(track, centre, offsetM, 0, g.position);
+    g.quaternion.setFromAxisAngle(yAxis, headingAt(track, centre));
+    g.userData['base'] = { p: g.position.clone(), q: g.quaternion.clone() };
+    out.push({ root: g, offsetM });
+  }
+  return out;
+}
+
 /** Speed-restriction boards: figure at the start, "T" termination at the end (generic style). */
 export function buildSpeedBoards(track: Track, route: RouteDef, net: RailNetwork): THREE.Group {
   const g = new THREE.Group();
