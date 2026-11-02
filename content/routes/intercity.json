@@ -68,7 +68,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     },
     {
       "id": "DVG",
@@ -85,7 +88,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     }
   ],
   "signals": [
@@ -361,5 +367,41 @@
       "fromM": 11350,
       "toM": 12200
     }
-  ]
+  ],
+  "scene": {
+    "zones": [
+      {
+        "zoneId": "city",
+        "fromM": 0,
+        "toM": 2000
+      },
+      {
+        "zoneId": "farmland",
+        "fromM": 2000,
+        "toM": 8000
+      },
+      {
+        "zoneId": "river",
+        "fromM": 8000,
+        "toM": 9200
+      },
+      {
+        "zoneId": "farmland",
+        "fromM": 9200,
+        "toM": 13500
+      },
+      {
+        "zoneId": "forest",
+        "fromM": 13500,
+        "toM": 15000
+      }
+    ],
+    "landmarks": [
+      {
+        "kind": "river-bridge",
+        "fromM": 8400,
+        "toM": 8800
+      }
+    ]
+  }
 }

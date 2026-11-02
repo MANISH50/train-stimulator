@@ -1,0 +1,28 @@
+{
+  "facts": [
+    {
+      "id": "ghat-gradient",
+      "trigger": "ghat",
+      "text": "Real ghat lines are steep: the historic Bhor Ghat incline was built at about 1 in 40, with a stretch of 1 in 37. This route's climb is gentler.",
+      "source": "https://wiki.fibis.org/w/Bhore_Ghat_Railway_Construction"
+    },
+    {
+      "id": "kharif-rabi",
+      "trigger": "farmland",
+      "text": "Indian farming has two main seasons: kharif crops such as paddy grow June–October, and rabi crops such as wheat and mustard are sown in November and harvested in April–May.",
+      "source": "https://en.wikipedia.org/wiki/Rabi_crop"
+    },
+    {
+      "id": "konkan-tunnels",
+      "trigger": "tunnel",
+      "text": "Hill railways need many tunnels: the Konkan Railway lists 91 tunnels on its 738.9 km line.",
+      "source": "https://konkanrailway.com/salient_features"
+    },
+    {
+      "id": "acp-law",
+      "trigger": "acp",
+      "text": "Pulling the alarm chain without good reason is an offence under Section 141 of the Railways Act, 1989.",
+      "source": "https://www.advocatekhoj.com/library/bareacts/railways/141.php"
+    }
+  ]
+}

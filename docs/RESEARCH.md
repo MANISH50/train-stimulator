@@ -1,6 +1,6 @@
 # Research
 
-Research is split into four files under `docs/research/`. Every fact cites a URL in those files, and anything unconfirmed is marked **UNVERIFIED**. Read the relevant file before you design a rule, scenario or physics change.
+Research is split into five files under `docs/research/`. Every fact cites a URL in those files, and anything unconfirmed is marked **UNVERIFIED**. Read the relevant file before you design a rule, scenario or physics change.
 
 | File | Covers |
 |---|---|
@@ -8,6 +8,9 @@ Research is split into four files under `docs/research/`. Every fact cites a URL
 | [02-train-physics.md](research/02-train-physics.md) | Tractive effort/adhesion, Davis resistance (kg/t), gradient/curve/tunnel resistance, twin-pipe air brake, reference figures, comfort limits, fixed-step integration |
 | [03-scenarios.md](research/03-scenarios.md) | 54 operating scenarios (32 from the brief + 22 new), each with trigger, correct response, penalty, "why this rule exists" text, mode and tier |
 | [04-prior-art-licensing.md](research/04-prior-art-licensing.md) | OpenBVE/Open Rails, OSM/ODbL, DEM and open data, CC0 asset sources, trademarks, Three.js performance, Tauri vs Electron |
+| [07-yards.md](research/07-yards.md) | Turnout types and speeds (1 in 8.5/12/16, thick-web), crossovers, slips, trap points, sand humps; junction and theatre route indicators, calling-on, shunt, point indicators; interlocking (conflicts, route/approach locking, overlap, standards); junction approach duties; big-junction layouts; recommended yard schema, aspect rules and the pilot-route junction |
+| [05-scene-zones.md](research/05-scene-zones.md) | Landscape sequences on reference corridors (Bhor/Thal Ghat, Konkan, Gangetic plains, Thar, Kerala backwaters, KK line); per-zone visuals and crops by season; ghat gradients, tunnels, bankers, catch sidings; bridge/viaduct spans; OSM/WorldCover/DEM data; game zone list and fictional 24 km pilot scene script |
+| [IMMERSION_IDEAS.md](IMMERSION_IDEAS.md) | Ranked immersion backlog; cited station life, porters, PA announcement languages, ACP procedure and Railways Act s.141 (sources C1–C21) |
 
 ## What Phase 1 uses
 - **Aspects:** RED stop, YELLOW caution, DOUBLE YELLOW attention, GREEN proceed. The lamp stack from the bottom is R, Y, G, Y2 (01 §1).

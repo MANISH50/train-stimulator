@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { LevelDef, LocoParams, RakeParams, RouteDef, TrainType } from '../sim/types';
+import type { ZoneDef } from '../sim/world/zones';
 
 const aspect = z.enum(['RED', 'YELLOW', 'DOUBLE_YELLOW', 'GREEN']);
 const dirSchema = z.union([z.literal(1), z.literal(-1)]);
@@ -47,6 +48,58 @@ export const RakeSchema = source.extend({
   brakeSignalSpeedMps: z.number().min(10).max(400),
 });
 
+const hexColour = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+
+export const ZoneSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  biome: z.enum([
+    'city',
+    'suburb',
+    'industrial',
+    'farmland',
+    'forest',
+    'plantation',
+    'river',
+    'ghat',
+    'hill-station',
+    'desert',
+    'wetland',
+    'mining',
+  ]),
+  relief: z.object({ heightM: z.number(), atM: positive, roughnessM: z.number().min(0) }),
+  vegetation: z.object({
+    kinds: z.array(z.enum(['broadleaf', 'palm', 'bamboo', 'conifer', 'shrub', 'crop'])),
+    perKm: z.number().min(0),
+    crop: hexColour.optional(),
+  }),
+  buildings: z.object({
+    style: z.enum(['highrise', 'slum', 'village', 'industrial', 'hill', 'none']),
+    perKm: z.number().min(0),
+  }),
+  grade: z.object({ ground: hexColour, foliage: hexColour, fog: hexColour }),
+  ambient: z.enum(['city', 'farm', 'forest', 'river', 'hills']),
+  population: z.number().min(0).max(1),
+  hazards: z.array(z.string()),
+});
+
+export const ZonesFileSchema = z.object({ zones: z.array(ZoneSchema).min(1) });
+
+const sceneScript = z.object({
+  zones: z
+    .array(z.object({ zoneId: z.string(), fromM: z.number().min(0), toM: z.number().min(0) }))
+    .min(1),
+  landmarks: z.array(
+    z.object({
+      kind: z.enum(['river-bridge', 'tunnel', 'viaduct', 'level-crossing']),
+      fromM: z.number().min(0),
+      toM: z.number().min(0),
+      name: z.string().optional(),
+    }),
+  ),
+  blendM: positive.optional(),
+});
+
 const segment = z.discriminatedUnion('type', [
   z.object({ type: z.literal('straight'), lengthM: positive }),
   z.object({
@@ -83,6 +136,13 @@ export const RouteSchema = source
         stopMarkM: z.number(),
         platformLengthM: positive,
         platforms: z.array(z.object({ offsetM: z.number(), widthM: positive })).optional(),
+        mainPlatform: z.number().int().min(1).optional(),
+        crowd: z
+          .object({
+            size: z.enum(['halt', 'town', 'junction', 'terminus']),
+            rush: positive.optional(),
+          })
+          .optional(),
       }),
     ),
     signals: z.array(
@@ -121,6 +181,8 @@ export const RouteSchema = source
       )
       .optional(),
     bufferStopM: z.number().min(0).optional(),
+    scene: sceneScript.optional(),
+    inspiredBy: z.string().optional(),
     loops: z
       .array(
         z.object({
@@ -130,6 +192,7 @@ export const RouteSchema = source
           dir: dirSchema,
           fromM: z.number().min(0),
           toM: z.number().min(0),
+          platform: z.number().int().min(1).optional(),
         }),
       )
       .optional(),
@@ -167,6 +230,17 @@ export const RouteSchema = source
           message: `signal ${sig.id} has unknown station ${sig.stationId}`,
         });
     }
+    if (r.scene) {
+      const zs = r.scene.zones;
+      zs.forEach((z, i) => {
+        if (z.toM <= z.fromM)
+          ctx.addIssue({ code: 'custom', message: `scene zone ${z.zoneId} is empty` });
+        if (i > 0 && z.fromM !== zs[i - 1]!.toM)
+          ctx.addIssue({ code: 'custom', message: `scene zone ${z.zoneId} does not follow on` });
+      });
+      if (zs[0]!.fromM > 0 || zs[zs.length - 1]!.toM < length)
+        ctx.addIssue({ code: 'custom', message: 'scene zones must cover the whole route' });
+    }
     for (const l of r.loops ?? []) {
       if (!lineIds.has(l.lineId) || !lineIds.has(l.mainLineId))
         ctx.addIssue({ code: 'custom', message: `loop at ${l.stationId} uses an unknown line` });
@@ -183,6 +257,7 @@ const stopSpec = z.object({
   stationId: z.string(),
   dueS: z.number().min(0).optional(),
   dwellS: z.number().min(0).optional(),
+  platform: z.number().int().min(1).optional(),
 });
 
 export const TrainTypeSchema = source.extend({
@@ -222,9 +297,33 @@ export const LevelSchema = source.extend({
       stops: z.array(stopSpec),
     }),
   ),
+  incidents: z
+    .array(
+      z.object({
+        kind: z.literal('acp'),
+        stationId: z.string(),
+        afterDepartM: positive,
+      }),
+    )
+    .optional(),
   defaultWeather: z.enum(['clear', 'haze', 'rain', 'fog', 'night']),
 });
 
+export const FactsFileSchema = z.object({
+  facts: z.array(
+    z.object({
+      id: z.string(),
+      /** Zone biome, landmark kind or incident kind that shows this fact. */
+      trigger: z.string(),
+      text: z.string().min(10),
+      source: z.string().url(),
+    }),
+  ),
+});
+
+export function parseZones(data: unknown): ZoneDef[] {
+  return ZonesFileSchema.parse(data).zones;
+}
 export function parseLoco(data: unknown): LocoParams {
   return LocoSchema.parse(data);
 }

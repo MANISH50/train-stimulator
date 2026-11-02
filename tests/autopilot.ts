@@ -37,7 +37,7 @@ export function autopilot(sim: Sim, opts: DriverOptions = {}): void {
   let target = Math.min(limit, curve);
   // Slow down in time for loop points ahead (their limit applies from the turnout).
   for (const loop of sim.net.loops) {
-    if (!sim.player.loopRoutes.has(loop.stationId) || loop.fromM <= s) continue;
+    if (sim.player.loopRoutes.get(loop.stationId) !== loop.lineId || loop.fromM <= s) continue;
     const lim = sim.net.speedLimitKmh(loop.lineId);
     if (lim === undefined || opts.speedKmh !== undefined) continue;
     const vLoop = (lim - 4) / 3.6;

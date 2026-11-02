@@ -23,7 +23,7 @@ function standing(frontS: number, lengthM = 300): Mover {
     isPlayer: false,
     frontS,
     speedMs: 0,
-    loopRoutes: new Set(),
+    loopRoutes: new Map(),
     stops: new Map(),
   };
 }

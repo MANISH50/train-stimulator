@@ -30,8 +30,15 @@ describe('content files', () => {
     }
   }
 
-  it('every level resolves to a runnable setup and all five are listed', () => {
-    expect(LEVELS.map((l) => l.id)).toEqual(['training', 'intercity', 'suburban', 'mail', 'goods']);
+  it('every level resolves to a runnable setup and all six are listed', () => {
+    expect(LEVELS.map((l) => l.id)).toEqual([
+      'training',
+      'intercity',
+      'suburban',
+      'mail',
+      'goods',
+      'ghat-express',
+    ]);
     for (const level of LEVELS) expect(levelSetup(level, 'clear').route.id).toBe(level.routeId);
   });
 

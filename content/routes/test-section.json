@@ -82,7 +82,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     }
   ],
   "signals": [
@@ -178,5 +181,20 @@
       ]
     }
   ],
-  "loops": []
+  "loops": [],
+  "scene": {
+    "zones": [
+      {
+        "zoneId": "suburb",
+        "fromM": 0,
+        "toM": 1600
+      },
+      {
+        "zoneId": "farmland",
+        "fromM": 1600,
+        "toM": 6000
+      }
+    ],
+    "landmarks": []
+  }
 }

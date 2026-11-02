@@ -1,0 +1,45 @@
+{
+  "id": "ghat-express",
+  "order": 6,
+  "title": "Ghat Express (living world)",
+  "subtitle": "Mail Express · city to the hills",
+  "detail": "Leave the city through the Nagarpur Junction yard to platform 1, cross the farmland and the Ratna river, then climb the ghat through two tunnels and over a viaduct to the Meghgarh terminus. Fictional route inspired by Western Ghats crossings.",
+  "routeId": "ghat-express",
+  "player": {
+    "trainTypeId": "mail-express",
+    "startS": 200,
+    "stops": [
+      { "stationId": "NJN", "dueS": 150, "dwellS": 40, "platform": 1 },
+      { "stationId": "KHP", "dueS": 600, "dwellS": 20 },
+      { "stationId": "MGH", "dueS": 1500 }
+    ]
+  },
+  "traffic": [
+    {
+      "id": "up-local",
+      "trainTypeId": "suburban-emu",
+      "dir": 1,
+      "spawnAtS": 0,
+      "spawnS": 1500,
+      "stops": [{ "stationId": "NJN", "dwellS": 140, "platform": 2 }]
+    },
+    {
+      "id": "dn-goods",
+      "trainTypeId": "goods",
+      "dir": -1,
+      "spawnAtS": 30,
+      "spawnS": 23000,
+      "stops": []
+    },
+    {
+      "id": "dn-passenger",
+      "trainTypeId": "passenger",
+      "dir": -1,
+      "spawnAtS": 260,
+      "spawnS": 23000,
+      "stops": []
+    }
+  ],
+  "incidents": [{ "kind": "acp", "stationId": "NJN", "afterDepartM": 180 }],
+  "defaultWeather": "clear"
+}

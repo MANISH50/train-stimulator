@@ -1,4 +1,6 @@
 import type { CrashKind } from './crash/crashSim';
+import type { AcpDebrief, AcpNarration } from './station/acp';
+import type { LandmarkKind } from './world/zones';
 import type { Aspect } from './types';
 
 export type SimEvent =
@@ -30,6 +32,19 @@ export type SimEvent =
   | { type: 'BUFFER_BUMP'; timeS: number; speedKmh: number }
   | { type: 'BUFFER_OVERRUN'; timeS: number; speedKmh: number }
   | { type: 'CRASH_SETTLED'; timeS: number }
+  | { type: 'ZONE_ENTERED'; timeS: number; zoneId: string }
+  | { type: 'LANDMARK'; timeS: number; kind: LandmarkKind; name?: string }
+  | { type: 'INCIDENT_SAY'; timeS: number; line: AcpNarration }
+  | { type: 'INCIDENT_DEBRIEF'; timeS: number; debrief: AcpDebrief }
+  | { type: 'VIOLATION'; timeS: number; kind: 'turnout-speed' | 'acp-traction'; text: string }
+  | {
+      type: 'ANNOUNCE';
+      timeS: number;
+      stationId: string;
+      kind: 'arriving' | 'delayed';
+      platform?: number;
+      lateMin?: number;
+    }
   | { type: 'SIGNAL_PASSED'; timeS: number; signalId: string; aspect: Aspect }
   | {
       type: 'SIGNAL_CLEARED';

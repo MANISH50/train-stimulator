@@ -59,10 +59,20 @@ export class RailNetwork {
     return this.loops.find((l) => l.stationId === stationId && l.dir === dir);
   }
 
-  /** Line a train with these loop routes is on at chainage s. */
-  lineFor(dir: Dir, loopRoutes: ReadonlySet<string>, s: number): string {
+  /** Every loop / platform line at a station for one direction. */
+  loopsAt(stationId: string, dir: Dir): LoopDef[] {
+    return this.loops.filter((l) => l.stationId === stationId && l.dir === dir);
+  }
+
+  /** Line a train with these loop routes (station id -> line id) is on at chainage s. */
+  lineFor(dir: Dir, loopRoutes: ReadonlyMap<string, string>, s: number): string {
     for (const loop of this.loops) {
-      if (loop.dir === dir && loopRoutes.has(loop.stationId) && s >= loop.fromM && s <= loop.toM) {
+      if (
+        loop.dir === dir &&
+        loopRoutes.get(loop.stationId) === loop.lineId &&
+        s >= loop.fromM &&
+        s <= loop.toM
+      ) {
         return loop.lineId;
       }
     }

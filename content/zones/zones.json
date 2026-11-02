@@ -1,0 +1,148 @@
+{
+  "zones": [
+    {
+      "id": "city",
+      "name": "City",
+      "biome": "city",
+      "relief": { "heightM": 0, "atM": 200, "roughnessM": 0.5 },
+      "vegetation": { "kinds": ["broadleaf", "palm"], "perKm": 18 },
+      "buildings": { "style": "highrise", "perKm": 90 },
+      "grade": { "ground": "#8b8274", "foliage": "#4d6630", "fog": "#c9c2b4" },
+      "ambient": "city",
+      "population": 1,
+      "hazards": ["trespasser", "level-crossing"]
+    },
+    {
+      "id": "suburb",
+      "name": "Suburbs",
+      "biome": "suburb",
+      "relief": { "heightM": 0, "atM": 200, "roughnessM": 1 },
+      "vegetation": { "kinds": ["broadleaf", "palm"], "perKm": 40 },
+      "buildings": { "style": "slum", "perKm": 110 },
+      "grade": { "ground": "#8a8063", "foliage": "#4f6b2c", "fog": "#cdc6b2" },
+      "ambient": "city",
+      "population": 0.8,
+      "hazards": ["trespasser", "level-crossing", "cattle"]
+    },
+    {
+      "id": "industrial",
+      "name": "Industrial belt",
+      "biome": "industrial",
+      "relief": { "heightM": 0, "atM": 200, "roughnessM": 0.5 },
+      "vegetation": { "kinds": ["shrub", "broadleaf"], "perKm": 15 },
+      "buildings": { "style": "industrial", "perKm": 30 },
+      "grade": { "ground": "#7c7466", "foliage": "#5a6a3a", "fog": "#bdb8ac" },
+      "ambient": "city",
+      "population": 0.3,
+      "hazards": ["level-crossing"]
+    },
+    {
+      "id": "farmland",
+      "name": "Villages and farmland",
+      "biome": "farmland",
+      "relief": { "heightM": 2, "atM": 400, "roughnessM": 1.5 },
+      "vegetation": { "kinds": ["crop", "broadleaf", "palm"], "perKm": 70, "crop": "#8fae3a" },
+      "buildings": { "style": "village", "perKm": 14 },
+      "grade": { "ground": "#7d8a45", "foliage": "#4f7a2a", "fog": "#d8dcc8" },
+      "ambient": "farm",
+      "population": 0.35,
+      "hazards": ["cattle", "level-crossing"]
+    },
+    {
+      "id": "river",
+      "name": "River valley",
+      "biome": "river",
+      "relief": { "heightM": -3, "atM": 300, "roughnessM": 1 },
+      "vegetation": { "kinds": ["broadleaf", "bamboo", "palm"], "perKm": 55 },
+      "buildings": { "style": "none", "perKm": 0 },
+      "grade": { "ground": "#6f7d47", "foliage": "#3f6a2a", "fog": "#cfd8d4" },
+      "ambient": "river",
+      "population": 0.15,
+      "hazards": []
+    },
+    {
+      "id": "forest",
+      "name": "Deciduous forest",
+      "biome": "forest",
+      "relief": { "heightM": 8, "atM": 300, "roughnessM": 4 },
+      "vegetation": { "kinds": ["broadleaf", "bamboo"], "perKm": 260 },
+      "buildings": { "style": "none", "perKm": 0 },
+      "grade": { "ground": "#55663a", "foliage": "#35561f", "fog": "#c4cfbd" },
+      "ambient": "forest",
+      "population": 0.02,
+      "hazards": ["wildlife"]
+    },
+    {
+      "id": "ghat",
+      "name": "Ghat section",
+      "biome": "ghat",
+      "relief": { "heightM": 70, "atM": 120, "roughnessM": 18 },
+      "vegetation": { "kinds": ["broadleaf", "bamboo", "shrub"], "perKm": 160 },
+      "buildings": { "style": "none", "perKm": 0 },
+      "grade": { "ground": "#5d6a3c", "foliage": "#3a5a22", "fog": "#bfcac4" },
+      "ambient": "hills",
+      "population": 0.01,
+      "hazards": ["landslide", "boulder"]
+    },
+    {
+      "id": "hill-station",
+      "name": "Hill station",
+      "biome": "hill-station",
+      "relief": { "heightM": 30, "atM": 250, "roughnessM": 10 },
+      "vegetation": { "kinds": ["conifer", "broadleaf"], "perKm": 90 },
+      "buildings": { "style": "hill", "perKm": 35 },
+      "grade": { "ground": "#647346", "foliage": "#2f5a2e", "fog": "#d2d9de" },
+      "ambient": "hills",
+      "population": 0.4,
+      "hazards": []
+    },
+    {
+      "id": "plantation",
+      "name": "Plantations and orchards",
+      "biome": "plantation",
+      "relief": { "heightM": 12, "atM": 250, "roughnessM": 6 },
+      "vegetation": { "kinds": ["shrub", "palm", "broadleaf"], "perKm": 180 },
+      "buildings": { "style": "village", "perKm": 6 },
+      "grade": { "ground": "#5f7a38", "foliage": "#3c6e24", "fog": "#d0dacb" },
+      "ambient": "farm",
+      "population": 0.15,
+      "hazards": []
+    },
+    {
+      "id": "desert",
+      "name": "Desert and scrub",
+      "biome": "desert",
+      "relief": { "heightM": 4, "atM": 300, "roughnessM": 3 },
+      "vegetation": { "kinds": ["shrub"], "perKm": 12 },
+      "buildings": { "style": "village", "perKm": 3 },
+      "grade": { "ground": "#c9a96e", "foliage": "#7d7a3e", "fog": "#e6d7b8" },
+      "ambient": "farm",
+      "population": 0.05,
+      "hazards": ["sand"]
+    },
+    {
+      "id": "wetland",
+      "name": "Wetlands and floodplain",
+      "biome": "wetland",
+      "relief": { "heightM": -1, "atM": 200, "roughnessM": 0.5 },
+      "vegetation": { "kinds": ["palm", "shrub"], "perKm": 40 },
+      "buildings": { "style": "village", "perKm": 5 },
+      "grade": { "ground": "#6e8250", "foliage": "#46702e", "fog": "#d3ddd6" },
+      "ambient": "river",
+      "population": 0.1,
+      "hazards": ["flooding"]
+    },
+    {
+      "id": "mining",
+      "name": "Mining belt",
+      "biome": "mining",
+      "relief": { "heightM": 6, "atM": 300, "roughnessM": 5 },
+      "vegetation": { "kinds": ["shrub"], "perKm": 10 },
+      "buildings": { "style": "industrial", "perKm": 10 },
+      "grade": { "ground": "#6a5a4a", "foliage": "#56603a", "fog": "#bdb3a6" },
+      "ambient": "city",
+      "population": 0.1,
+      "hazards": []
+    }
+  ]
+}

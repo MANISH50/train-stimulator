@@ -1,0 +1,645 @@
+{
+  "id": "ghat-express",
+  "name": "Ghat line",
+  "note": "Original fictional 24 km line: city junction, farmland, river bridge, forest, ghat with tunnels and a viaduct, hill-station terminus.",
+  "fictional": true,
+  "startChainageM": 0,
+  "segments": [
+    {
+      "type": "straight",
+      "lengthM": 3800
+    },
+    {
+      "type": "curve",
+      "lengthM": 800,
+      "radiusM": 1200,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 3200
+    },
+    {
+      "type": "curve",
+      "lengthM": 600,
+      "radiusM": 1500,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 3400
+    },
+    {
+      "type": "curve",
+      "lengthM": 700,
+      "radiusM": 1000,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 2500
+    },
+    {
+      "type": "curve",
+      "lengthM": 900,
+      "radiusM": 650,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 700
+    },
+    {
+      "type": "curve",
+      "lengthM": 1000,
+      "radiusM": 600,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 800
+    },
+    {
+      "type": "curve",
+      "lengthM": 900,
+      "radiusM": 650,
+      "turn": "right"
+    },
+    {
+      "type": "straight",
+      "lengthM": 1200
+    },
+    {
+      "type": "curve",
+      "lengthM": 800,
+      "radiusM": 700,
+      "turn": "left"
+    },
+    {
+      "type": "straight",
+      "lengthM": 2415
+    }
+  ],
+  "gradients": [
+    {
+      "fromM": 0,
+      "grade": 0
+    },
+    {
+      "fromM": 14000,
+      "grade": 0.004
+    },
+    {
+      "fromM": 15600,
+      "grade": 0.0167
+    },
+    {
+      "fromM": 21600,
+      "grade": 0.004
+    },
+    {
+      "fromM": 22600,
+      "grade": 0
+    }
+  ],
+  "speedLimits": [
+    {
+      "fromM": 0,
+      "toM": 23715,
+      "kmh": 100,
+      "kind": "permanent"
+    },
+    {
+      "fromM": 15600,
+      "toM": 21800,
+      "kmh": 50,
+      "kind": "permanent"
+    },
+    {
+      "fromM": 22800,
+      "toM": 23715,
+      "kmh": 30,
+      "kind": "permanent"
+    }
+  ],
+  "stations": [
+    {
+      "id": "NJN",
+      "name": "Nagarpur Junction",
+      "localName": "नगरपुर जंक्शन",
+      "stopMarkM": 2800,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -19.6,
+          "widthM": 3.6
+        },
+        {
+          "offsetM": -5.8,
+          "widthM": 2.9
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ],
+      "crowd": {
+        "size": "junction",
+        "rush": 1.4
+      },
+      "mainPlatform": 3
+    },
+    {
+      "id": "KHP",
+      "name": "Khetpura",
+      "localName": "खेतपुरा",
+      "stopMarkM": 8800,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ],
+      "crowd": {
+        "size": "halt"
+      }
+    },
+    {
+      "id": "MGH",
+      "name": "Meghgarh",
+      "localName": "मेघगढ़",
+      "stopMarkM": 23620,
+      "platformLengthM": 500,
+      "platforms": [
+        {
+          "offsetM": -6.6,
+          "widthM": 4.5
+        },
+        {
+          "offsetM": 6,
+          "widthM": 3.5
+        }
+      ],
+      "crowd": {
+        "size": "terminus"
+      }
+    }
+  ],
+  "signals": [
+    {
+      "id": "DA16",
+      "label": "Automatic DA16",
+      "kind": "automatic",
+      "chainageM": 315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "NJN-D",
+      "label": "Distant NJN",
+      "kind": "distant",
+      "chainageM": 600
+    },
+    {
+      "id": "NJN-H",
+      "label": "Home NJN",
+      "kind": "home",
+      "chainageM": 1800,
+      "stationId": "NJN"
+    },
+    {
+      "id": "DA15",
+      "label": "Automatic DA15",
+      "kind": "automatic",
+      "chainageM": 1815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "NJN-S1",
+      "label": "Starter P1 NJN",
+      "kind": "starter",
+      "chainageM": 2850,
+      "line": "PF1-NJN",
+      "stationId": "NJN"
+    },
+    {
+      "id": "NJN-S2",
+      "label": "Starter P2 NJN",
+      "kind": "starter",
+      "chainageM": 2850,
+      "line": "PF2-NJN",
+      "stationId": "NJN"
+    },
+    {
+      "id": "NJN-S",
+      "label": "Starter P3 NJN",
+      "kind": "starter",
+      "chainageM": 2850,
+      "stationId": "NJN"
+    },
+    {
+      "id": "DA14",
+      "label": "Automatic DA14",
+      "kind": "automatic",
+      "chainageM": 3315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "NJN-AS",
+      "label": "Advanced Starter NJN",
+      "kind": "advanced-starter",
+      "chainageM": 3400
+    },
+    {
+      "id": "A1",
+      "label": "Automatic A1",
+      "kind": "automatic",
+      "chainageM": 3900
+    },
+    {
+      "id": "DA13",
+      "label": "Automatic DA13",
+      "kind": "automatic",
+      "chainageM": 4815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A2",
+      "label": "Automatic A2",
+      "kind": "automatic",
+      "chainageM": 5400
+    },
+    {
+      "id": "DA12",
+      "label": "Automatic DA12",
+      "kind": "automatic",
+      "chainageM": 6315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "KHP-D",
+      "label": "Distant KHP",
+      "kind": "distant",
+      "chainageM": 6800
+    },
+    {
+      "id": "DA11",
+      "label": "Automatic DA11",
+      "kind": "automatic",
+      "chainageM": 7815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "KHP-H",
+      "label": "Home KHP",
+      "kind": "home",
+      "chainageM": 8000,
+      "stationId": "KHP"
+    },
+    {
+      "id": "KHP-S",
+      "label": "Starter KHP",
+      "kind": "starter",
+      "chainageM": 8850,
+      "stationId": "KHP"
+    },
+    {
+      "id": "DA10",
+      "label": "Automatic DA10",
+      "kind": "automatic",
+      "chainageM": 9315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "KHP-AS",
+      "label": "Advanced Starter KHP",
+      "kind": "advanced-starter",
+      "chainageM": 9400
+    },
+    {
+      "id": "A3",
+      "label": "Automatic A3",
+      "kind": "automatic",
+      "chainageM": 9900
+    },
+    {
+      "id": "DA9",
+      "label": "Automatic DA9",
+      "kind": "automatic",
+      "chainageM": 10815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A4",
+      "label": "Automatic A4",
+      "kind": "automatic",
+      "chainageM": 11400
+    },
+    {
+      "id": "DA8",
+      "label": "Automatic DA8",
+      "kind": "automatic",
+      "chainageM": 12315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A5",
+      "label": "Automatic A5",
+      "kind": "automatic",
+      "chainageM": 12900
+    },
+    {
+      "id": "DA7",
+      "label": "Automatic DA7",
+      "kind": "automatic",
+      "chainageM": 13815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A6",
+      "label": "Automatic A6",
+      "kind": "automatic",
+      "chainageM": 14400
+    },
+    {
+      "id": "DA6",
+      "label": "Automatic DA6",
+      "kind": "automatic",
+      "chainageM": 15315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A7",
+      "label": "Automatic A7",
+      "kind": "automatic",
+      "chainageM": 15900
+    },
+    {
+      "id": "DA5",
+      "label": "Automatic DA5",
+      "kind": "automatic",
+      "chainageM": 16815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A8",
+      "label": "Automatic A8",
+      "kind": "automatic",
+      "chainageM": 17400
+    },
+    {
+      "id": "DA4",
+      "label": "Automatic DA4",
+      "kind": "automatic",
+      "chainageM": 18315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A9",
+      "label": "Automatic A9",
+      "kind": "automatic",
+      "chainageM": 18900
+    },
+    {
+      "id": "DA3",
+      "label": "Automatic DA3",
+      "kind": "automatic",
+      "chainageM": 19815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "A10",
+      "label": "Automatic A10",
+      "kind": "automatic",
+      "chainageM": 20400
+    },
+    {
+      "id": "DA2",
+      "label": "Automatic DA2",
+      "kind": "automatic",
+      "chainageM": 21315,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "MGH-D",
+      "label": "Distant MGH",
+      "kind": "distant",
+      "chainageM": 21620
+    },
+    {
+      "id": "DA1",
+      "label": "Automatic DA1",
+      "kind": "automatic",
+      "chainageM": 22815,
+      "line": "DN",
+      "dir": -1
+    },
+    {
+      "id": "MGH-H",
+      "label": "Home MGH",
+      "kind": "home",
+      "chainageM": 22820,
+      "stationId": "MGH"
+    }
+  ],
+  "lines": [
+    {
+      "id": "UP",
+      "name": "Up main",
+      "fromM": 0,
+      "toM": 23715,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": -2.65
+        }
+      ]
+    },
+    {
+      "id": "DN",
+      "name": "Down main",
+      "fromM": 0,
+      "toM": 23715,
+      "offsets": [
+        {
+          "atM": 0,
+          "offsetM": 2.65
+        }
+      ]
+    },
+    {
+      "id": "PF1-NJN",
+      "name": "Nagarpur Junction platform 1",
+      "fromM": 1900,
+      "toM": 3190,
+      "offsets": [
+        {
+          "atM": 1900,
+          "offsetM": -2.65
+        },
+        {
+          "atM": 2020,
+          "offsetM": -9
+        },
+        {
+          "atM": 2140,
+          "offsetM": -16
+        },
+        {
+          "atM": 2950,
+          "offsetM": -16
+        },
+        {
+          "atM": 3070,
+          "offsetM": -9
+        },
+        {
+          "atM": 3190,
+          "offsetM": -2.65
+        }
+      ],
+      "speedLimitKmh": 30
+    },
+    {
+      "id": "PF2-NJN",
+      "name": "Nagarpur Junction platform 2",
+      "fromM": 2150,
+      "toM": 3000,
+      "offsets": [
+        {
+          "atM": 2150,
+          "offsetM": -2.65
+        },
+        {
+          "atM": 2270,
+          "offsetM": -9
+        },
+        {
+          "atM": 2880,
+          "offsetM": -9
+        },
+        {
+          "atM": 3000,
+          "offsetM": -2.65
+        }
+      ],
+      "speedLimitKmh": 30
+    }
+  ],
+  "loops": [
+    {
+      "stationId": "NJN",
+      "lineId": "PF1-NJN",
+      "mainLineId": "UP",
+      "dir": 1,
+      "fromM": 1900,
+      "toM": 3190,
+      "platform": 1
+    },
+    {
+      "stationId": "NJN",
+      "lineId": "PF2-NJN",
+      "mainLineId": "UP",
+      "dir": 1,
+      "fromM": 2150,
+      "toM": 3000,
+      "platform": 2
+    }
+  ],
+  "bufferStopM": 23700,
+  "scene": {
+    "zones": [
+      {
+        "zoneId": "city",
+        "fromM": 0,
+        "toM": 3600
+      },
+      {
+        "zoneId": "suburb",
+        "fromM": 3600,
+        "toM": 5200
+      },
+      {
+        "zoneId": "industrial",
+        "fromM": 5200,
+        "toM": 6400
+      },
+      {
+        "zoneId": "farmland",
+        "fromM": 6400,
+        "toM": 10800
+      },
+      {
+        "zoneId": "river",
+        "fromM": 10800,
+        "toM": 12400
+      },
+      {
+        "zoneId": "forest",
+        "fromM": 12400,
+        "toM": 15600
+      },
+      {
+        "zoneId": "ghat",
+        "fromM": 15600,
+        "toM": 21800
+      },
+      {
+        "zoneId": "hill-station",
+        "fromM": 21800,
+        "toM": 23715
+      }
+    ],
+    "landmarks": [
+      {
+        "kind": "level-crossing",
+        "fromM": 7400,
+        "toM": 7412
+      },
+      {
+        "kind": "river-bridge",
+        "fromM": 11300,
+        "toM": 11800,
+        "name": "Ratna river"
+      },
+      {
+        "kind": "tunnel",
+        "fromM": 16900,
+        "toM": 17500,
+        "name": "Tunnel 1"
+      },
+      {
+        "kind": "viaduct",
+        "fromM": 18600,
+        "toM": 18900,
+        "name": "Kalda viaduct"
+      },
+      {
+        "kind": "tunnel",
+        "fromM": 19800,
+        "toM": 20700,
+        "name": "Tunnel 2"
+      }
+    ]
+  },
+  "inspiredBy": "Western Ghats ghat crossings"
+}

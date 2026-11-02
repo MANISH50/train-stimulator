@@ -76,7 +76,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     }
   ],
   "signals": [
@@ -261,5 +264,30 @@
       "fromM": 4100,
       "toM": 5200
     }
-  ]
+  ],
+  "scene": {
+    "zones": [
+      {
+        "zoneId": "industrial",
+        "fromM": 0,
+        "toM": 1800
+      },
+      {
+        "zoneId": "farmland",
+        "fromM": 1800,
+        "toM": 3200
+      },
+      {
+        "zoneId": "forest",
+        "fromM": 3200,
+        "toM": 7000
+      },
+      {
+        "zoneId": "mining",
+        "fromM": 7000,
+        "toM": 10000
+      }
+    ],
+    "landmarks": []
+  }
 }

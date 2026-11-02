@@ -266,7 +266,7 @@ export class GameRenderer {
     } else if (view) {
       // Replay pre-roll: the trains running in toward the impact point.
       const spec = view.setup.trains[0]!;
-      const lines = new Set(spec.loopRoutes);
+      const lines = new Map(spec.loopRoutes);
       const f = spec.frontS + spec.v * this.preRollS;
       this.train.update(track, f, 1, (s) => sim.net.offsetAt(sim.net.lineFor(1, lines, s), s));
       this.poseBufferStop(null);

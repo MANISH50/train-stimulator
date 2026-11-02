@@ -30,6 +30,8 @@ interface StationSignals {
   dir: Dir;
   home?: SignalDef;
   starters: SignalDef[];
+  /** The station's loop / platform lines for this direction (first = overtake loop). */
+  loops: LoopDef[];
   loop?: LoopDef;
 }
 
@@ -56,6 +58,7 @@ export class Dispatcher implements RouteControl {
           dir,
           home: mine.find((s) => s.kind === 'home'),
           starters: mine.filter((s) => s.kind === 'starter'),
+          loops: net.loopsAt(station.id, dir),
           loop: net.loopAt(station.id, dir),
         });
       }
@@ -114,12 +117,19 @@ export class Dispatcher implements RouteControl {
         decided.add(m.id);
         continue;
       }
+      // A booked platform decides the route outright.
+      const booked = this.bookedLine(g, m);
+      if (booked !== undefined) {
+        decided.add(m.id);
+        if (booked) m.loopRoutes.set(g.station.id, booked.lineId);
+        continue;
+      }
       // The route stays open to a loop overtake until the train is too close to the home.
       if (toHome < ROUTE_LOCK_M) decided.add(m.id);
       const overtaker = this.findOvertaker(m, movers);
       if (overtaker && !this.loopClaimed(g, movers, m)) {
         decided.add(m.id);
-        m.loopRoutes.add(g.station.id);
+        m.loopRoutes.set(g.station.id, g.loop.lineId);
         this.overtakeFor.set(`${m.id}:${g.station.id}`, overtaker.id);
         this.newLoopRoutings.push({
           moverId: m.id,
@@ -128,6 +138,16 @@ export class Dispatcher implements RouteControl {
         });
       }
     }
+  }
+
+  /**
+   * Line for a train's booked platform at this station: a loop, null for the main line, or
+   * undefined when no platform is booked (the dispatcher then decides).
+   */
+  private bookedLine(g: StationSignals, m: Mover): LoopDef | null | undefined {
+    const platform = m.stops.get(g.station.id)?.platform;
+    if (platform === undefined) return undefined;
+    return g.loops.find((l) => l.platform === platform) ?? null;
   }
 
   /** Nearest higher-priority train following in the same direction within the overtake gap. */
@@ -146,7 +166,7 @@ export class Dispatcher implements RouteControl {
     return movers.some(
       (o) =>
         o !== except &&
-        o.loopRoutes.has(g.station.id) &&
+        o.loopRoutes.get(g.station.id) === g.loop!.lineId &&
         o.dir === g.dir &&
         aheadOf(o, g.loop!.toM) > -o.lengthM,
     );
@@ -165,23 +185,20 @@ export class Dispatcher implements RouteControl {
     }
     this.holds.set(home.id, !next);
     const main = mainLine(g.dir);
-    this.homeRoute.set(
-      home.id,
-      next && g.loop && next.loopRoutes.has(g.station.id) ? g.loop.lineId : main,
-    );
+    this.homeRoute.set(home.id, (next && next.loopRoutes.get(g.station.id)) ?? main);
   }
 
   /** A starter stays at danger until its train has finished dwelling and is not being held. */
   private workStarters(g: StationSignals, movers: readonly Mover[], timeS: number): void {
     for (const starter of g.starters) {
       const line = signalLine(starter);
-      const onLoop = g.loop?.lineId === line;
+      const main = mainLine(g.dir);
       let train: Mover | undefined;
       for (const m of movers) {
         if (m.dir !== g.dir) continue;
         const d = aheadOf(m, starter.chainageM);
         if (d < 0 || d > ROUTE_SETTING_M + 1500) continue;
-        if (onLoop !== m.loopRoutes.has(g.station.id)) continue;
+        if ((m.loopRoutes.get(g.station.id) ?? main) !== line) continue;
         if (!train || d < aheadOf(train, starter.chainageM)) train = m;
       }
       if (!train) {

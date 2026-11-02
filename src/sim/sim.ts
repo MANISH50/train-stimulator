@@ -2,6 +2,9 @@ import { SIM_DT } from './clock';
 import { CrashSim, type CrashKind, type CrashSetup, type CrashTrainSpec } from './crash/crashSim';
 import { classify, findContact, lateralAt, type Contact } from './crash/detect';
 import { hashString } from './rng';
+import { AcpIncident } from './station/acp';
+import { Crowds } from './station/crowd';
+import { dominantZone, landmarkAt } from './world/zones';
 import type { SimEvent } from './events';
 import { makeConsist, type Consist } from './physics/forces';
 import { initialTrain, stepTrain, type TrainState } from './physics/train';
@@ -25,6 +28,7 @@ import type {
   Aspect,
   Controls,
   Dir,
+  IncidentSpec,
   Livery,
   LocoParams,
   RakeParams,
@@ -82,6 +86,7 @@ export interface SimSetup {
   accidents?: boolean;
   /** Seed for crash variation (deterministic). */
   seed?: string;
+  incidents?: IncidentSpec[];
 }
 
 export type SimStatus = 'running' | 'failed' | 'finished' | 'crashed';
@@ -110,7 +115,7 @@ class PlayerMover implements Mover {
   readonly id = 'player';
   readonly dir = 1 as const;
   readonly isPlayer = true;
-  readonly loopRoutes = new Set<string>();
+  readonly loopRoutes = new Map<string, string>();
   frontS: number;
   speedMs = 0;
   constructor(
@@ -165,6 +170,25 @@ export class Sim {
   private bufferBumped = false;
   private settledEmitted = false;
   private readonly contact: Contact = { s: 0, y: 0, lateralM: 0 };
+  /** Station crowds (deterministic; rendered by src/render/crowd). */
+  readonly crowds: Crowds;
+  readonly incidents: AcpIncident[] = [];
+  /** Rule breaches that do not end the run (scored in the run record). */
+  readonly violations: { kind: string; timeS: number; text: string }[] = [];
+  /** Controls as the train sees them (an open ACP valve vents the brake pipe). */
+  private readonly effControls: Controls = {
+    reverser: 1,
+    notch: 0,
+    autoBrake: 0,
+    indepBrake: 1,
+    emergency: false,
+  };
+  private zoneId: string | undefined;
+  private slowTick = 0;
+  private signalTick = 0;
+  private landmark: string | undefined;
+  private readonly announced = new Set<string>();
+  private readonly turnoutWarned = new Set<string>();
   private readonly aiCtx: AiContext;
 
   constructor(readonly setup: SimSetup) {
@@ -175,6 +199,20 @@ export class Sim {
     this.weatherId = setup.weather ?? 'clear';
     this.weather = WEATHER[this.weatherId];
     this.accidents = setup.accidents ?? false;
+    this.crowds = new Crowds(
+      setup.route.stations,
+      this.net,
+      hashString(`${setup.seed ?? setup.route.id}:crowd`),
+    );
+    for (const spec of setup.incidents ?? []) {
+      this.incidents.push(
+        new AcpIncident(
+          spec,
+          setup.rake.vehicles,
+          hashString(`${setup.seed ?? ''}:${spec.stationId}`),
+        ),
+      );
+    }
     const pt = setup.playerType ?? {
       name: 'Your train',
       priority: 3,
@@ -218,7 +256,13 @@ export class Sim {
     }
     if (this.status !== 'running') return;
     const prevS = this.train.s;
-    stepTrain(this.train, this.consist, this.controls, this.track, dt, this.weather);
+    const ctl = this.effControls;
+    Object.assign(ctl, this.controls);
+    if (this.incidents.some((i) => i.venting)) {
+      ctl.emergency = true;
+      ctl.notch = 0;
+    }
+    stepTrain(this.train, this.consist, ctl, this.track, dt, this.weather);
     this.player.frontS = this.train.s;
     this.player.speedMs = Math.abs(this.train.v);
     this.timeS += dt;
@@ -230,10 +274,19 @@ export class Sim {
     // Aspects used for the SPAD check are the ones shown before this step's movement.
     this.checkSignals(prevS);
     if (this.status !== 'running') return;
-    this.updateSignalling();
+    // Signalling refreshes at 30 Hz: aspects change on block boundaries, not every frame.
+    if ((this.signalTick++ & 1) === 0) this.updateSignalling();
     this.checkSpeed();
     this.checkStations();
     this.checkNotifications();
+    this.crowds.step(dt, this.movers, this.train.s);
+    this.checkIncidents();
+    this.checkTurnouts();
+    // Journey log and announcements need only a few updates a second.
+    if (++this.slowTick % 15 === 0) {
+      this.checkWorld();
+      this.checkAnnouncements();
+    }
     if (this.accidents) {
       this.checkCollisions();
       if (this.status === 'running') this.checkDerailment();
@@ -280,6 +333,23 @@ export class Sim {
       };
     }
     return best;
+  }
+
+  /**
+   * Junction-type route indicator on a home signal: the platform number of the route set
+   * (lit only for a diverging route; unlit for the main line or at danger).
+   */
+  routeIndicator(sig: SignalDef): number | null {
+    if (sig.kind !== 'home' || !sig.stationId || this.aspectOf(sig) === 'RED') return null;
+    const line = this.dispatcher.lineBeyond(sig);
+    return this.net.loops.find((l) => l.lineId === line)?.platform ?? null;
+  }
+
+  /** Platform the player's train is routed to at a station, if numbered. */
+  playerPlatform(st: Station): number | undefined {
+    const line = this.player.loopRoutes.get(st.id);
+    if (line) return this.net.loops.find((l) => l.lineId === line)?.platform;
+    return st.mainPlatform;
   }
 
   /** Why the player's train is being held at a station, if it is. */
@@ -670,6 +740,101 @@ export class Sim {
       } else {
         this.emit({ type: 'SIGNAL_PASSED', timeS: this.timeS, signalId: sig.id, aspect });
       }
+    }
+  }
+
+  private checkIncidents(): void {
+    for (const inc of this.incidents) {
+      const st = this.setup.route.stations.find((x) => x.id === inc.spec.stationId);
+      const stop = this.player.stops.get(inc.spec.stationId);
+      if (!st) continue;
+      const departed = stop && !stop.done ? -1 : this.train.s - stopMarkFor(st, 1);
+      inc.update(
+        this.timeS,
+        departed,
+        this.train.s,
+        Math.abs(this.train.v),
+        this.controls.notch,
+        (line) => this.emit({ type: 'INCIDENT_SAY', timeS: this.timeS, line }),
+        (debrief) => {
+          for (const v of debrief.violations) this.violation('acp-traction', v);
+          this.emit({ type: 'INCIDENT_DEBRIEF', timeS: this.timeS, debrief });
+        },
+      );
+    }
+  }
+
+  /** Journey log: the landscape zone and landmarks the train front is passing. */
+  private checkWorld(): void {
+    const scene = this.setup.route.scene;
+    if (!scene) return;
+    const z = dominantZone(scene, this.train.s);
+    if (z && z !== this.zoneId) {
+      this.zoneId = z;
+      this.emit({ type: 'ZONE_ENTERED', timeS: this.timeS, zoneId: z });
+    }
+    const lm = landmarkAt(scene, this.train.s);
+    const key = lm ? `${lm.kind}@${lm.fromM}` : undefined;
+    if (lm && key !== this.landmark) {
+      this.emit({ type: 'LANDMARK', timeS: this.timeS, kind: lm.kind, name: lm.name });
+    }
+    this.landmark = key;
+  }
+
+  /** Turnout speed: running over points faster than their limit is a scored violation. */
+  private checkTurnouts(): void {
+    const kmh = Math.abs(this.train.v) * 3.6;
+    const len = this.consist.lengthM;
+    const rear = this.train.s - len;
+    // Only where the train overlaps a loop or platform line's points.
+    if (!this.net.loops.some((l) => l.fromM <= this.train.s && l.toM >= rear)) return;
+    for (let d = 0; d <= len; d += 20) {
+      const s = this.train.s - Math.min(d, len);
+      const line = this.playerLineAt(s);
+      const lim = this.net.speedLimitKmh(line);
+      if (lim === undefined || this.turnoutWarned.has(line)) continue;
+      const slope = (this.net.offsetAt(line, s + 1) - this.net.offsetAt(line, s - 1)) / 2;
+      if (Math.abs(slope) > TURNOUT_SLOPE && kmh > lim + OVERSPEED_TOLERANCE_KMH) {
+        this.turnoutWarned.add(line);
+        this.violation(
+          'turnout-speed',
+          `${kmh.toFixed(0)} km/h over points limited to ${lim} km/h`,
+        );
+      }
+    }
+  }
+
+  private violation(kind: 'turnout-speed' | 'acp-traction', text: string): void {
+    this.violations.push({ kind, timeS: this.timeS, text });
+    this.emit({ type: 'VIOLATION', timeS: this.timeS, kind, text });
+  }
+
+  /** Station announcements for the player's next booked stop. */
+  private checkAnnouncements(): void {
+    const next = this.playerNextStop();
+    if (!next || next.distM > 2500) return;
+    const st = next.station;
+    if (!this.announced.has(st.id)) {
+      this.announced.add(st.id);
+      this.emit({
+        type: 'ANNOUNCE',
+        timeS: this.timeS,
+        stationId: st.id,
+        kind: 'arriving',
+        platform: next.stop.platform ?? this.playerPlatform(st),
+      });
+    }
+    const due = next.stop.dueS;
+    const lateKey = `${st.id}:late`;
+    if (due !== undefined && this.timeS - due > 120 && !this.announced.has(lateKey)) {
+      this.announced.add(lateKey);
+      this.emit({
+        type: 'ANNOUNCE',
+        timeS: this.timeS,
+        stationId: st.id,
+        kind: 'delayed',
+        lateMin: Math.round((this.timeS - due) / 60),
+      });
     }
   }
 

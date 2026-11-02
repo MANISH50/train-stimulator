@@ -60,7 +60,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     },
     {
       "id": "KLN",
@@ -77,7 +80,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     },
     {
       "id": "BGH",
@@ -94,7 +100,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     },
     {
       "id": "SGM",
@@ -111,7 +120,11 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "terminus",
+        "rush": 1.5
+      }
     }
   ],
   "signals": [
@@ -290,5 +303,25 @@
     }
   ],
   "loops": [],
-  "bufferStopM": 6070
+  "bufferStopM": 6070,
+  "scene": {
+    "zones": [
+      {
+        "zoneId": "city",
+        "fromM": 0,
+        "toM": 2500
+      },
+      {
+        "zoneId": "suburb",
+        "fromM": 2500,
+        "toM": 5200
+      },
+      {
+        "zoneId": "city",
+        "fromM": 5200,
+        "toM": 6085
+      }
+    ],
+    "landmarks": []
+  }
 }

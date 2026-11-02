@@ -8,6 +8,7 @@ import coach12 from '../../content/rakes/coach-12.json';
 import coach18 from '../../content/rakes/coach-18.json';
 import emu11 from '../../content/rakes/emu-11.json';
 import lhb22 from '../../content/rakes/lhb-22.json';
+import ghatRoute from '../../content/routes/ghat-express.json';
 import goodsRoute from '../../content/routes/goods.json';
 import intercityRoute from '../../content/routes/intercity.json';
 import mailRoute from '../../content/routes/mail.json';
@@ -18,11 +19,15 @@ import mailType from '../../content/trains/mail-express.json';
 import passengerType from '../../content/trains/passenger.json';
 import emuType from '../../content/trains/suburban-emu.json';
 import superfastType from '../../content/trains/superfast.json';
+import factsFile from '../../content/facts.json';
+import ghatLevel from '../../content/levels/ghat-express.json';
 import goodsLevel from '../../content/levels/goods.json';
 import intercityLevel from '../../content/levels/intercity.json';
 import mailLevel from '../../content/levels/mail.json';
 import suburbanLevel from '../../content/levels/suburban.json';
 import trainingLevel from '../../content/levels/training.json';
+import zonesFile from '../../content/zones/zones.json';
+import type { ZoneDef } from '../sim/world/zones';
 import type { SimSetup } from '../sim/sim';
 import type {
   LevelDef,
@@ -32,15 +37,26 @@ import type {
   TrainType,
   WeatherId,
 } from '../sim/types';
-import { parseLevel, parseLoco, parseRake, parseRoute, parseTrainType } from './schema';
+import {
+  parseLevel,
+  parseLoco,
+  parseRake,
+  parseRoute,
+  parseTrainType,
+  parseZones,
+  FactsFileSchema,
+} from './schema';
 
 const byId = <T extends { id: string }>(items: T[]): Map<string, T> =>
   new Map(items.map((i) => [i.id, i]));
 
+export const ZONES: ReadonlyMap<string, ZoneDef> = byId<ZoneDef>(parseZones(zonesFile));
+/** Cited "Did you know?" facts for the journey log. */
+export const FACTS = FactsFileSchema.parse(factsFile).facts;
 export const LOCOS = byId<LocoParams>([eClass, gClass, dClass, emuMotor].map(parseLoco));
 export const RAKES = byId<RakeParams>([coach12, coach18, lhb22, emu11, boxn58].map(parseRake));
 export const ROUTES = byId<RouteDef>(
-  [testRoute, intercityRoute, suburbanRoute, mailRoute, goodsRoute].map(parseRoute),
+  [testRoute, intercityRoute, suburbanRoute, mailRoute, goodsRoute, ghatRoute].map(parseRoute),
 );
 export const TRAIN_TYPES = byId<TrainType>(
   [superfastType, mailType, passengerType, emuType, goodsType].map(parseTrainType),
@@ -51,6 +67,7 @@ export const LEVELS: LevelDef[] = [
   suburbanLevel,
   mailLevel,
   goodsLevel,
+  ghatLevel,
 ]
   .map(parseLevel)
   .sort((a, b) => a.order - b.order);
@@ -78,6 +95,7 @@ export function levelSetup(level: LevelDef, weather: WeatherId, accidents = fals
     weather,
     accidents,
     seed: level.id,
+    incidents: level.incidents ?? [],
     traffic: level.traffic.map((t) => {
       const type = trainType(t.trainTypeId);
       return {

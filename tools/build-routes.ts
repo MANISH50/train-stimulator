@@ -3,7 +3,9 @@
 // Distant -> Home -> Starter (main and loop) -> Advanced Starter, plus automatic signals
 // between stations on both lines. Run: npx tsx tools/build-routes.ts
 import { writeFileSync } from 'node:fs';
+import type { Landmark, SceneEntry } from '../src/sim/world/zones';
 import type {
+  CrowdProfile,
   LineDef,
   LoopDef,
   RouteDef,
@@ -28,6 +30,21 @@ interface StationSpec {
   homeHoldUntilS?: number;
   /** Dead-end terminus: no starters; the line ends at a buffer stop beyond the platform. */
   terminus?: boolean;
+  /** How busy it is (default: town). */
+  crowd?: CrowdProfile;
+  /** Per-station override of the home/distant distances (big junction approaches). */
+  homeM?: number;
+  distantM?: number;
+  /**
+   * Junction with numbered platform lines: each line leaves the UP main through a ladder of
+   * crossovers (lateral offset keyframes relative to the stop mark) and rejoins beyond.
+   */
+  junction?: {
+    mainPlatform: number;
+    turnoutKmh: number;
+    lines: { platform: number; keys: [number, number][] }[];
+    platforms: { offsetM: number; widthM: number }[];
+  };
 }
 
 interface RouteSpec {
@@ -48,6 +65,10 @@ interface RouteSpec {
   loopApproachM?: number;
   /** Buffer stop face (m), for a route ending at a terminus. */
   bufferStopM?: number;
+  /** Permanent speed restrictions (e.g. ghat sections, terminal approach). */
+  psr?: { fromM: number; toM: number; kmh: number }[];
+  scene: { zones: SceneEntry[]; landmarks: Landmark[] };
+  inspiredBy?: string;
 }
 
 function build(spec: RouteSpec): RouteDef & { note: string } {
@@ -68,15 +89,17 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
   for (const st of spec.stations) {
     const x = st.stopMarkM;
     const code = st.id;
-    const platforms = st.loop
-      ? [
-          { offsetM: -5.8, widthM: 2.9 },
-          { offsetM: 6.0, widthM: 3.5 },
-        ]
-      : [
-          { offsetM: -6.6, widthM: 4.5 },
-          { offsetM: 6.0, widthM: 3.5 },
-        ];
+    const platforms = st.junction
+      ? st.junction.platforms
+      : st.loop
+        ? [
+            { offsetM: -5.8, widthM: 2.9 },
+            { offsetM: 6.0, widthM: 3.5 },
+          ]
+        : [
+            { offsetM: -6.6, widthM: 4.5 },
+            { offsetM: 6.0, widthM: 3.5 },
+          ];
     stations.push({
       id: st.id,
       name: st.name,
@@ -84,7 +107,39 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
       stopMarkM: x,
       platformLengthM: PLATFORM_M,
       platforms,
+      crowd: st.crowd ?? { size: st.terminus ? 'terminus' : 'town' },
+      ...(st.junction ? { mainPlatform: st.junction.mainPlatform } : {}),
     });
+    for (const jl of st.junction?.lines ?? []) {
+      const lineId = `PF${jl.platform}-${code}`;
+      const fromM = x + jl.keys[0]![0];
+      const toM = x + jl.keys[jl.keys.length - 1]![0];
+      lines.push({
+        id: lineId,
+        name: `${st.name} platform ${jl.platform}`,
+        fromM,
+        toM,
+        offsets: jl.keys.map(([rel, offsetM]) => ({ atM: x + rel, offsetM })),
+        speedLimitKmh: st.junction!.turnoutKmh,
+      });
+      loops.push({
+        stationId: st.id,
+        lineId,
+        mainLineId: 'UP',
+        dir: 1,
+        fromM,
+        toM,
+        platform: jl.platform,
+      });
+      signals.push({
+        id: `${code}-S${jl.platform}`,
+        label: `Starter P${jl.platform} ${code}`,
+        kind: 'starter',
+        chainageM: x + 50,
+        line: lineId,
+        stationId: st.id,
+      });
+    }
     if (st.loop) {
       const loopId = `LOOP-${code}`;
       lines.push({
@@ -118,12 +173,17 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
       });
     }
     signals.push(
-      { id: `${code}-D`, label: `Distant ${code}`, kind: 'distant', chainageM: x - distantM },
+      {
+        id: `${code}-D`,
+        label: `Distant ${code}`,
+        kind: 'distant',
+        chainageM: x - (st.distantM ?? distantM),
+      },
       {
         id: `${code}-H`,
         label: `Home ${code}`,
         kind: 'home',
-        chainageM: x - homeM,
+        chainageM: x - (st.homeM ?? homeM),
         stationId: st.id,
         ...(st.homeHoldUntilS ? { holdUntilS: st.homeHoldUntilS } : {}),
       },
@@ -132,7 +192,7 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
       signals.push(
         {
           id: `${code}-S`,
-          label: `Starter ${code}`,
+          label: st.junction ? `Starter P${st.junction.mainPlatform} ${code}` : `Starter ${code}`,
           kind: 'starter',
           chainageM: x + 50,
           stationId: st.id,
@@ -145,7 +205,7 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
         },
       );
     }
-    reserved.push([x - distantM - 400, x + advancedM + 400]);
+    reserved.push([x - (st.distantM ?? distantM) - 400, x + advancedM + 400]);
   }
 
   // Automatic signals on the UP line outside station areas.
@@ -172,6 +232,7 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
 
   const speedLimits: SpeedLimit[] = [
     { fromM: 0, toM: length, kmh: spec.lineSpeedKmh, kind: 'permanent' },
+    ...(spec.psr ?? []).map((t) => ({ ...t, kind: 'permanent' as const })),
     ...(spec.tsr ?? []).map((t) => ({ ...t, kind: 'temporary' as const })),
   ];
   return {
@@ -188,6 +249,8 @@ function build(spec: RouteSpec): RouteDef & { note: string } {
     lines,
     loops,
     ...(spec.bufferStopM !== undefined ? { bufferStopM: spec.bufferStopM } : {}),
+    scene: spec.scene,
+    ...(spec.inspiredBy ? { inspiredBy: spec.inspiredBy } : {}),
   };
 }
 
@@ -202,6 +265,13 @@ const curve = (lengthM: number, radiusM: number, turn: 'left' | 'right'): TrackS
 const ROUTES: RouteSpec[] = [
   {
     id: 'test-section',
+    scene: {
+      zones: [
+        { zoneId: 'suburb', fromM: 0, toM: 1600 },
+        { zoneId: 'farmland', fromM: 1600, toM: 6000 },
+      ],
+      landmarks: [],
+    },
     name: 'Training Ground test section',
     note: 'Original fictional training section, double line, ~6 km.',
     segments: [
@@ -233,6 +303,16 @@ const ROUTES: RouteSpec[] = [
   },
   {
     id: 'intercity',
+    scene: {
+      zones: [
+        { zoneId: 'city', fromM: 0, toM: 2000 },
+        { zoneId: 'farmland', fromM: 2000, toM: 8000 },
+        { zoneId: 'river', fromM: 8000, toM: 9200 },
+        { zoneId: 'farmland', fromM: 9200, toM: 13500 },
+        { zoneId: 'forest', fromM: 13500, toM: 15000 },
+      ],
+      landmarks: [{ kind: 'river-bridge', fromM: 8400, toM: 8800 }],
+    },
     name: 'Intercity corridor',
     note: 'Original fictional 15 km double line with two loop stations.',
     segments: [
@@ -256,6 +336,14 @@ const ROUTES: RouteSpec[] = [
   },
   {
     id: 'suburban',
+    scene: {
+      zones: [
+        { zoneId: 'city', fromM: 0, toM: 2500 },
+        { zoneId: 'suburb', fromM: 2500, toM: 5200 },
+        { zoneId: 'city', fromM: 5200, toM: 6085 },
+      ],
+      landmarks: [],
+    },
     name: 'Suburban line',
     note: 'Original fictional 6 km suburban double line, four stations ~1.5 km apart, ending at a terminus with buffer stops.',
     segments: [
@@ -275,12 +363,28 @@ const ROUTES: RouteSpec[] = [
       { id: 'NGR', name: 'Nagar Road', localName: 'नगर रोड', stopMarkM: 1500 },
       { id: 'KLN', name: 'Kalina', localName: 'कलीना', stopMarkM: 3000 },
       { id: 'BGH', name: 'Bagh', localName: 'बाग', stopMarkM: 4500 },
-      { id: 'SGM', name: 'Sangam', localName: 'संगम', stopMarkM: 6000, terminus: true },
+      {
+        id: 'SGM',
+        name: 'Sangam',
+        localName: 'संगम',
+        stopMarkM: 6000,
+        terminus: true,
+        crowd: { size: 'terminus', rush: 1.5 },
+      },
     ],
     autoSpacingM: 700,
   },
   {
     id: 'mail',
+    scene: {
+      zones: [
+        { zoneId: 'suburb', fromM: 0, toM: 1800 },
+        { zoneId: 'farmland', fromM: 1800, toM: 5400 },
+        { zoneId: 'forest', fromM: 5400, toM: 6200 },
+        { zoneId: 'farmland', fromM: 6200, toM: 10000 },
+      ],
+      landmarks: [],
+    },
     name: 'Mail line',
     note: 'Original fictional 10 km double line; loop at Sitapur Junction for overtakes.',
     segments: [
@@ -310,6 +414,15 @@ const ROUTES: RouteSpec[] = [
   },
   {
     id: 'goods',
+    scene: {
+      zones: [
+        { zoneId: 'industrial', fromM: 0, toM: 1800 },
+        { zoneId: 'farmland', fromM: 1800, toM: 3200 },
+        { zoneId: 'forest', fromM: 3200, toM: 7000 },
+        { zoneId: 'mining', fromM: 7000, toM: 10000 },
+      ],
+      landmarks: [],
+    },
     name: 'Ghat goods line',
     note: 'Original fictional 10 km goods line with a 1 in 150 rise and fall and a crossing loop.',
     segments: [
@@ -333,6 +446,122 @@ const ROUTES: RouteSpec[] = [
     homeM: 1050,
     stations: [{ id: 'GHT', name: 'Ghatpur', localName: 'घाटपुर', stopMarkM: 5000, loop: true }],
     autoSpacingM: 1400,
+  },
+  {
+    // Pilot route for the living world: a fictional ghat line "inspired by" Western Ghats
+    // crossings (docs/research/05). Every name is fictional. Gradients and limits are
+    // approximate game values, gentler than the steepest real ghats.
+    id: 'ghat-express',
+    name: 'Ghat line',
+    note: 'Original fictional 24 km line: city junction, farmland, river bridge, forest, ghat with tunnels and a viaduct, hill-station terminus.',
+    inspiredBy: 'Western Ghats ghat crossings',
+    segments: [
+      straight(3800),
+      curve(800, 1200, 'left'),
+      straight(3200),
+      curve(600, 1500, 'right'),
+      straight(3400),
+      curve(700, 1000, 'left'),
+      straight(2500),
+      curve(900, 650, 'right'),
+      straight(700),
+      curve(1000, 600, 'left'),
+      straight(800),
+      curve(900, 650, 'right'),
+      straight(1200),
+      curve(800, 700, 'left'),
+      straight(2415),
+    ],
+    gradients: [
+      { fromM: 0, grade: 0 },
+      { fromM: 14000, grade: 0.004 },
+      { fromM: 15600, grade: 0.0167 },
+      { fromM: 21600, grade: 0.004 },
+      { fromM: 22600, grade: 0 },
+    ],
+    lineSpeedKmh: 100,
+    psr: [
+      { fromM: 15600, toM: 21800, kmh: 50 },
+      { fromM: 22800, toM: 23715, kmh: 30 },
+    ],
+    bufferStopM: 23700,
+    stations: [
+      {
+        id: 'NJN',
+        name: 'Nagarpur Junction',
+        localName: 'नगरपुर जंक्शन',
+        stopMarkM: 2800,
+        homeM: 1000,
+        distantM: 2200,
+        crowd: { size: 'junction', rush: 1.4 },
+        junction: {
+          mainPlatform: 3,
+          turnoutKmh: 30,
+          lines: [
+            {
+              platform: 1,
+              keys: [
+                [-900, UP],
+                [-780, LOOP],
+                [-660, -16],
+                [150, -16],
+                [270, LOOP],
+                [390, UP],
+              ],
+            },
+            {
+              platform: 2,
+              keys: [
+                [-650, UP],
+                [-530, LOOP],
+                [80, LOOP],
+                [200, UP],
+              ],
+            },
+          ],
+          platforms: [
+            { offsetM: -19.6, widthM: 3.6 },
+            { offsetM: -5.8, widthM: 2.9 },
+            { offsetM: 6.0, widthM: 3.5 },
+          ],
+        },
+      },
+      {
+        id: 'KHP',
+        name: 'Khetpura',
+        localName: 'खेतपुरा',
+        stopMarkM: 8800,
+        crowd: { size: 'halt' },
+      },
+      {
+        id: 'MGH',
+        name: 'Meghgarh',
+        localName: 'मेघगढ़',
+        stopMarkM: 23620,
+        terminus: true,
+        crowd: { size: 'terminus' },
+      },
+    ],
+    autoSpacingM: 1500,
+    scene: {
+      zones: [
+        { zoneId: 'city', fromM: 0, toM: 3600 },
+        { zoneId: 'suburb', fromM: 3600, toM: 5200 },
+        { zoneId: 'industrial', fromM: 5200, toM: 6400 },
+        { zoneId: 'farmland', fromM: 6400, toM: 10800 },
+        { zoneId: 'river', fromM: 10800, toM: 12400 },
+        { zoneId: 'forest', fromM: 12400, toM: 15600 },
+        { zoneId: 'ghat', fromM: 15600, toM: 21800 },
+        { zoneId: 'hill-station', fromM: 21800, toM: 23715 },
+      ],
+      landmarks: [
+        { kind: 'level-crossing', fromM: 7400, toM: 7412 },
+        { kind: 'river-bridge', fromM: 11300, toM: 11800, name: 'Ratna river' },
+        { kind: 'tunnel', fromM: 16900, toM: 17500, name: 'Tunnel 1' },
+        { kind: 'viaduct', fromM: 18600, toM: 18900, name: 'Kalda viaduct' },
+        { kind: 'tunnel', fromM: 19800, toM: 20700, name: 'Tunnel 2' },
+      ],
+    },
   },
 ];
 

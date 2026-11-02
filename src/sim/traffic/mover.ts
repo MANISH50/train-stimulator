@@ -12,6 +12,8 @@ export const STOP_WINDOW_M = 30;
 
 export interface StopState {
   dwellS: number;
+  /** Booked platform number, if any. */
+  platform?: number;
   dueS?: number;
   arrivedAtS?: number;
   done: boolean;
@@ -29,8 +31,8 @@ export interface Mover {
   /** Chainage of the leading end and speed magnitude (m/s). */
   frontS: number;
   speedMs: number;
-  /** Stations at which this train has been routed into the loop. */
-  readonly loopRoutes: Set<string>;
+  /** Station id -> loop/platform line this train has been routed onto there. */
+  readonly loopRoutes: Map<string, string>;
   readonly stops: Map<string, StopState>;
 }
 
@@ -58,9 +60,42 @@ export function makeStops(
 ): Map<string, StopState> {
   const stops = new Map<string, StopState>();
   for (const s of specs) {
-    stops.set(s.stationId, { dwellS: s.dwellS ?? defaultDwellS, dueS: s.dueS, done: false });
+    stops.set(s.stationId, {
+      dwellS: s.dwellS ?? defaultDwellS,
+      dueS: s.dueS,
+      platform: s.platform,
+      done: false,
+    });
   }
   return stops;
+}
+
+interface Footprint {
+  frontS: number;
+  routes: number;
+  lines: string[];
+}
+/** Per-mover line at each sample point, recomputed only when the mover moves or is rerouted. */
+const footprints = new WeakMap<Mover, Footprint>();
+const FOOTPRINT_STEP_M = 20;
+
+function footprint(m: Mover, net: RailNetwork): Footprint {
+  let fp = footprints.get(m);
+  if (!fp) {
+    fp = { frontS: NaN, routes: -1, lines: [] };
+    footprints.set(m, fp);
+  }
+  if (fp.frontS !== m.frontS || fp.routes !== m.loopRoutes.size) {
+    const n = Math.max(1, Math.ceil(m.lengthM / FOOTPRINT_STEP_M));
+    fp.lines.length = n + 1;
+    for (let i = 0; i <= n; i++) {
+      const s = m.frontS - m.dir * Math.min(m.lengthM, i * FOOTPRINT_STEP_M);
+      fp.lines[i] = net.lineFor(m.dir, m.loopRoutes, s);
+    }
+    fp.frontS = m.frontS;
+    fp.routes = m.loopRoutes.size;
+  }
+  return fp;
 }
 
 /**
@@ -80,14 +115,20 @@ export function occupies(
   const front = m.frontS;
   const rear = rearS(m);
   if (Math.max(front, rear) < lo || Math.min(front, rear) > hi) return false;
-  const step = 20;
+  const step = FOOTPRINT_STEP_M;
   const target = net.line(lineId);
   const targetVaries = varies(target);
-  const n = Math.max(1, Math.ceil(m.lengthM / step));
-  for (let i = 0; i <= n; i++) {
+  const fp = footprint(m, net);
+  const n = fp.lines.length - 1;
+  // Only the samples whose chainage falls inside [lo, hi] (sample i sits i*step behind the front).
+  const nearD = m.dir === 1 ? front - hi : lo - front;
+  const farD = m.dir === 1 ? front - lo : hi - front;
+  const first = Math.max(0, Math.ceil(nearD / step));
+  const last = Math.min(n, Math.floor(farD / step) + 1);
+  for (let i = first; i <= last; i++) {
     const s = front - m.dir * Math.min(m.lengthM, i * step);
     if (s < lo || s > hi) continue;
-    const own = net.lineFor(m.dir, m.loopRoutes, s);
+    const own = fp.lines[i]!;
     if (own === lineId) return true;
     // Straight mains sit at fixed offsets and never foul each other; only loops (turnouts) can.
     if (!targetVaries && !varies(net.line(own))) continue;

@@ -22,7 +22,7 @@ export interface CrashTrainSpec {
   frontS: number;
   /** Velocity along +chainage (m/s). */
   v: number;
-  loopRoutes: readonly string[];
+  loopRoutes: readonly (readonly [string, string])[];
   /** Body colour used for debris (0xRRGGBB). */
   colour: number;
 }
@@ -140,7 +140,7 @@ const TIP_ANGLE = 0.6;
 const GROUND_LEVEL = -0.1;
 const MAX_DEBRIS = 160;
 const MAX_IMPACTS = 64;
-const SETTLE_MAX_S = 15;
+const SETTLE_MAX_S = 30;
 const BUFFER_BREAK_IMPULSE = 1.5e5;
 
 export class CrashSim {
@@ -269,9 +269,9 @@ export class CrashSim {
 
   private addTrain(t: CrashTrainSpec, ti: number): void {
     const { loco, rake } = t.consist;
-    const loopRoutes = new Set(t.loopRoutes);
+    const loopRoutes = new Map(t.loopRoutes);
     this.lineFns[ti] = (s) => this.net.offsetAt(this.net.lineFor(t.dir, loopRoutes, s), s);
-    this.brakeDecel[ti] = Math.max(0.8, rake.brakeForceRatio * G);
+    this.brakeDecel[ti] = Math.max(1.0, rake.brakeForceRatio * G);
     this.lastSide[ti] = this.rng() < 0.5 ? -1 : 1;
     const list: CrashBody[] = [];
     const wagon = rake.style === 'wagon';

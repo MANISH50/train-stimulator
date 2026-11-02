@@ -31,7 +31,7 @@ export interface AiContext {
 
 export class AiTrain implements Mover {
   readonly isPlayer = false;
-  readonly loopRoutes = new Set<string>();
+  readonly loopRoutes = new Map<string, string>();
   readonly stops: Map<string, StopState>;
   readonly lengthM: number;
   readonly priority: number;

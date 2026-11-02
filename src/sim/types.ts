@@ -1,4 +1,5 @@
 // Plain data types shared by the simulation. SI units unless the name says otherwise.
+import type { SceneScript } from './world/zones';
 
 export interface LocoParams {
   id: string;
@@ -104,6 +105,8 @@ export interface LoopDef {
   dir: Dir;
   fromM: number;
   toM: number;
+  /** Platform number this line serves (junction platform lines). */
+  platform?: number;
 }
 
 export type WeatherId = 'clear' | 'haze' | 'rain' | 'fog' | 'night';
@@ -140,6 +143,8 @@ export interface StopSpec {
   /** Timetabled arrival, seconds after the level starts. */
   dueS?: number;
   dwellS?: number;
+  /** Booked platform at a station with several platform lines. */
+  platform?: number;
 }
 
 export interface TrafficSpec {
@@ -161,7 +166,17 @@ export interface LevelDef {
   routeId: string;
   player: { trainTypeId: string; startS: number; stops: StopSpec[] };
   traffic: TrafficSpec[];
+  /** Scripted incidents (narrated, non-graphic) for this level. */
+  incidents?: IncidentSpec[];
   defaultWeather: WeatherId;
+}
+
+/** ACP: a passenger pulls the alarm chain soon after the train leaves a station. */
+export interface IncidentSpec {
+  kind: 'acp';
+  stationId: string;
+  /** Distance the train front has run past the stop mark when the chain is pulled (m). */
+  afterDepartM: number;
 }
 
 export type TrackSegment =
@@ -183,8 +198,18 @@ export interface Station {
   /** Chainage of the platform's stopping mark for the front of an UP train. */
   stopMarkM: number;
   platformLengthM: number;
+  /** Platform number served by the main line, at junctions with numbered platforms. */
+  mainPlatform?: number;
+  /** How busy the station is: drives crowd size and station life. */
+  crowd?: CrowdProfile;
   /** Platform slabs as lateral centre offset + width; defaults to one platform left of UP. */
   platforms?: { offsetM: number; widthM: number }[];
+}
+
+export interface CrowdProfile {
+  size: 'halt' | 'town' | 'junction' | 'terminus';
+  /** Multiplier for peak hours / festival rush (1 = normal). */
+  rush?: number;
 }
 
 export interface RouteDef {
@@ -203,6 +228,10 @@ export interface RouteDef {
   loops?: LoopDef[];
   /** Buffer stop face on every line, for a route ending at a dead-end terminus (m). */
   bufferStopM?: number;
+  /** Landscape zones and landmarks along the route. */
+  scene?: SceneScript;
+  /** Fictional routes "inspired by" a real corridor name it here. */
+  inspiredBy?: string;
 }
 
 export interface Controls {

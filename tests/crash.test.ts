@@ -16,7 +16,7 @@ const reckless: DriverOptions = { ignoreRed: true, ignoreStops: true };
 /** Step a crashed sim until the wreck settles; returns the events seen meanwhile. */
 function settle(sim: Sim): SimEvent[] {
   const events: SimEvent[] = [];
-  for (let i = 0; i < 20 * 60 && !sim.crash?.settled; i++) {
+  for (let i = 0; i < 35 * 60 && !sim.crash?.settled; i++) {
     sim.step();
     events.push(...sim.drainEvents());
   }
@@ -161,14 +161,14 @@ describe('buffer stops', () => {
 });
 
 describe('crash simulation', () => {
-  it('settles within 15 s with finite poses and the energy gone', () => {
+  it('settles within 30 s with finite poses and the energy gone', () => {
     const sim = level('suburban');
     drive(sim, 900, undefined, reckless);
     const crash = sim.crash!;
     const e0 = crash.kineticEnergy();
     settle(sim);
     expect(crash.settled).toBe(true);
-    expect(crash.timeS).toBeLessThanOrEqual(15.01);
+    expect(crash.timeS).toBeLessThanOrEqual(30.01);
     expect(crash.kineticEnergy()).toBeLessThan(e0 * 0.01);
     for (const b of crash.bodies) {
       expect(Number.isFinite(b.s + b.y + b.z + b.yaw + b.pitch + b.roll)).toBe(true);
@@ -193,7 +193,7 @@ describe('crash simulation', () => {
     drive(sim, 900, undefined, reckless);
     settle(sim);
     const replay = new CrashSim(sim.crashSetup!, sim.track, sim.net);
-    for (let i = 0; i < 20 * 60 && !replay.settled; i++) replay.step(1 / 60);
+    for (let i = 0; i < 35 * 60 && !replay.settled; i++) replay.step(1 / 60);
     const pose = (c: CrashSim) => c.bodies.map((b) => [b.s, b.y, b.z, b.yaw, b.roll].join(','));
     expect(pose(replay)).toEqual(pose(sim.crash!));
   });

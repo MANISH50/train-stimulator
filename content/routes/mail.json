@@ -68,7 +68,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     },
     {
       "id": "STP",
@@ -85,7 +88,10 @@
           "offsetM": 6,
           "widthM": 3.5
         }
-      ]
+      ],
+      "crowd": {
+        "size": "town"
+      }
     }
   ],
   "signals": [
@@ -272,5 +278,30 @@
       "fromM": 6350,
       "toM": 7200
     }
-  ]
+  ],
+  "scene": {
+    "zones": [
+      {
+        "zoneId": "suburb",
+        "fromM": 0,
+        "toM": 1800
+      },
+      {
+        "zoneId": "farmland",
+        "fromM": 1800,
+        "toM": 5400
+      },
+      {
+        "zoneId": "forest",
+        "fromM": 5400,
+        "toM": 6200
+      },
+      {
+        "zoneId": "farmland",
+        "fromM": 6200,
+        "toM": 10000
+      }
+    ],
+    "landmarks": []
+  }
 }
