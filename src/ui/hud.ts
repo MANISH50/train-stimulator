@@ -3,7 +3,9 @@ import type { CameraMode } from '../render/scene';
 import type { SimEvent } from '../sim/events';
 import { BP_CHARGED } from '../sim/physics/brakes';
 import type { Sim } from '../sim/sim';
+import { FACTS, ZONES } from '../content/catalog';
 import { ASPECT_MEANING } from '../sim/signalling/signal';
+import type { AcpDebrief } from '../sim/station/acp';
 import './hud.css';
 
 /** Sim clock starts at a fictional 06:00 departure. */
@@ -43,6 +45,10 @@ export class Hud {
   private bannerTimer = 0;
   /** Called for important notifications (e.g. a chime from the audio system). */
   onNotify: () => void = () => {};
+  /** Journey log: regions and landmarks passed, with times. */
+  readonly journey: string[] = [];
+  private readonly factsShown = new Set<string>();
+  private subtitleTimer = 0;
   /** Inquiry card buttons. */
   onReplay: () => void = () => {};
   onRestart: () => void = () => {};
@@ -66,11 +72,13 @@ export class Hud {
           <div class="sigName" data-k="sigName">—</div>
           <div class="sigMeaning" data-k="sigMeaning"></div>
           <div class="sigDist" data-k="sigDist"></div>
+          <div class="sigRoute" data-k="sigRoute"></div>
         </div>
       </section>
       <section class="panel top" aria-label="Journey">
         <span data-k="clock">06:00:00</span>
         <span data-k="next"></span>
+        <span data-k="place" class="place"></span>
         <span data-k="hint" class="hint"></span>
       </section>
       <nav class="panel camBar" aria-label="Camera view">
@@ -95,6 +103,7 @@ export class Hud {
       <div class="toast" data-k="toast" role="status"></div>
       <div class="banner" data-k="banner" role="alert"><b data-k="bannerTitle"></b><span data-k="bannerText"></span></div>
       <div class="flash" data-k="flash"></div>
+      <div class="subtitle" data-k="subtitle" aria-live="polite"><b data-k="subSpeaker"></b><span data-k="subText"></span></div>
       <div class="perf" data-k="perf" hidden></div>
       <div class="overlay" data-k="overlay" hidden></div>
       <div class="overlay help" data-k="help" hidden></div>
@@ -134,6 +143,8 @@ export class Hud {
     if (view) {
       const { def, aspect, distM, visible } = view;
       this.set('sigName', def.label);
+      const pf = sim.routeIndicator(def);
+      this.set('sigRoute', pf !== null ? `Route indicator: platform ${pf}` : '');
       this.set(
         'sigDist',
         distM > 1000 ? `${(distM / 1000).toFixed(2)} km` : `${distM.toFixed(0)} m`,
@@ -284,9 +295,47 @@ export class Hud {
         case 'END_OF_TRACK':
           this.showOverlay(
             'Journey complete',
-            `You reached the end of the line at ${formatClock(CLOCK_START_S + sim.timeS)}.`,
+            `You reached the end of the line at ${formatClock(CLOCK_START_S + sim.timeS)}.` +
+              (this.journey.length ? ` Journey log: ${this.journey.join(' · ')}.` : '') +
+              (sim.violations.length
+                ? ` Violations: ${sim.violations.map((v) => v.text).join('; ')}.`
+                : ' No rule violations.'),
             '',
           );
+          break;
+        case 'ZONE_ENTERED': {
+          const z = ZONES.get(e.zoneId);
+          if (!z) break;
+          this.log(sim, z.name);
+          this.toast(`Entering: ${z.name}`, 'info');
+          this.fact(z.biome === 'ghat' ? 'ghat' : z.biome);
+          break;
+        }
+        case 'LANDMARK': {
+          const what =
+            e.kind === 'river-bridge'
+              ? `Crossing the ${e.name ?? 'river'} bridge`
+              : e.kind === 'tunnel'
+                ? `Entering ${e.name ?? 'a tunnel'}`
+                : e.kind === 'viaduct'
+                  ? `Over the ${e.name ?? 'viaduct'}`
+                  : 'Level crossing — sound the horn';
+          if (e.kind !== 'level-crossing')
+            this.log(sim, what.replace(/^(Crossing|Entering|Over) the /, ''));
+          this.toast(what, e.kind === 'level-crossing' ? 'warn' : 'info');
+          if (e.kind === 'tunnel') this.fact('tunnel');
+          break;
+        }
+        case 'VIOLATION':
+          this.toast(`Violation: ${e.text}`, 'warn');
+          break;
+        case 'INCIDENT_SAY':
+          if (e.line.speaker === 'cab')
+            this.banner('ACP — alarm chain pulled', e.line.text, 'danger', 9000);
+          break;
+        case 'INCIDENT_DEBRIEF':
+          this.showDebrief(e.debrief);
+          this.fact('acp');
           break;
         default:
           break;
@@ -367,6 +416,87 @@ export class Hud {
   setPaused(paused: boolean): void {
     if (paused) this.showOverlay('Paused', 'Press P to continue, or Esc for the menu.', '');
     else this.el['overlay']!.hidden = true;
+  }
+
+  /** Caption for spoken announcements and radio (always shown, with who is speaking). */
+  subtitle(speaker: string, text: string): void {
+    this.set('subSpeaker', speaker);
+    this.set('subText', text);
+    this.el['subtitle']!.classList.add('show');
+    clearTimeout(this.subtitleTimer);
+    this.subtitleTimer = window.setTimeout(
+      () => this.el['subtitle']!.classList.remove('show'),
+      2500 + text.length * 70,
+    );
+  }
+
+  /** Name of the region / landmark the train is in, for the journey line. */
+  setPlace(text: string): void {
+    this.set('place', text);
+  }
+
+  resetJourney(): void {
+    this.journey.length = 0;
+    this.factsShown.clear();
+  }
+
+  private log(sim: Sim, what: string): void {
+    this.journey.push(`${formatClock(CLOCK_START_S + sim.timeS).slice(0, 5)} ${what}`);
+  }
+
+  /** A cited "Did you know?" card, once per topic. */
+  private fact(trigger: string): void {
+    const f = FACTS.find((x) => x.trigger === trigger && !this.factsShown.has(x.id));
+    if (!f) return;
+    this.factsShown.add(f.id);
+    window.setTimeout(
+      () =>
+        this.banner(
+          'Did you know?',
+          `${f.text} (Source: ${new URL(f.source).hostname})`,
+          'info',
+          10000,
+        ),
+      4000,
+    );
+  }
+
+  private showDebrief(d: AcpDebrief): void {
+    const o = this.el['overlay']!;
+    o.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card debrief';
+    const h = document.createElement('h2');
+    h.textContent = 'Incident debrief — alarm chain pulling';
+    const rows: [string, string][] = [
+      ['What happened', d.what],
+      ['Your response', d.yourResponse],
+      ['Which rule applied', d.rule],
+    ];
+    card.append(h);
+    for (const [k, v] of rows) {
+      const p = document.createElement('p');
+      const b = document.createElement('b');
+      b.textContent = `${k}: `;
+      p.append(b, document.createTextNode(v));
+      card.append(p);
+    }
+    if (d.violations.length) {
+      const p = document.createElement('p');
+      p.className = 'cause';
+      p.textContent = `Violation: ${d.violations.join(' ')}`;
+      card.append(p);
+    }
+    const btn = document.createElement('button');
+    btn.textContent = 'Continue the journey';
+    btn.dataset['action'] = 'debrief-close';
+    btn.addEventListener('click', () => (o.hidden = true));
+    const actions = document.createElement('div');
+    actions.className = 'cardActions';
+    actions.append(btn);
+    card.append(actions);
+    o.append(card);
+    o.hidden = false;
   }
 
   hideOverlay(): void {
@@ -489,8 +619,12 @@ export class Hud {
     if (hold?.kind === 'not-at-mark') return 'Draw up to the STOP mark to start your dwell';
     const view = sim.nextSignalView();
     const loop = sim.net.loops.find(
-      (l) => sim.player.loopRoutes.has(l.stationId) && l.fromM > sim.train.s,
+      (l) => sim.player.loopRoutes.get(l.stationId) === l.lineId && l.fromM > sim.train.s,
     );
+    if (loop?.platform !== undefined) {
+      const lim = sim.net.speedLimitKmh(loop.lineId);
+      return `Routed to platform ${loop.platform} ahead: ${lim ?? 30} km/h over the points`;
+    }
     if (loop) return `Routed into the loop ahead: 30 km/h, stop at the loop starter`;
     if (sim.train.v === 0 && view && view.aspect === 'RED' && view.distM < 400) {
       return `Wait at ${view.def.label} until it clears`;

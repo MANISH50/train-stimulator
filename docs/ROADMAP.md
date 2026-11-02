@@ -6,6 +6,7 @@
 | 2 | Block signalling and station signals (home, starter, loop starter, advanced starter) worked by a dispatcher; dwell and "signal cleared" notifications; timetable line. Still to do: VCD, Kavach-style protection, pre-departure checklist, report card, tutorial | **Partly done** |
 | 3 | AI traffic + dispatcher: priority overtakes in station loops, double line with opposing traffic, holds behind other trains | **Done** (cascading-delay timetables still to come) |
 | 4 | Weather and time of day: clear, haze, monsoon rain (wet rail), winter fog (signal sighting, caution cap), night (headlight, lamps) | **Done** (weather audio and fog detonators still to come) |
+| 5a | Living world vertical slice: scene zones with smooth transitions, the fictional "Ghat Express" pilot route (city → farmland → river bridge → forest → ghat tunnels/viaduct → hill station), junction yard with platform lines, crossovers, route indicator and turnout-speed rule, busy-station crowds, trilingual subtitled announcements, ACP incident with debrief | **Done** (more routes, incidents and the ranked ideas in docs/IMMERSION_IDEAS.md come in later waves) |
 | 5 | India route map selector; first real corridor from OSM (Geofabrik extract, offline) + Copernicus GLO-30 DEM; regional stations | |
 | 6 | Five levels (Training, Intercity, Suburban, Mail/Passenger, Goods), each with its own train type; all unlocked | **Done** (progression and scoring still to come) |
 | 7 | Performance pass, accessibility (colour-blind aids, gamepad, subtitles), Tauri desktop builds, CI | |

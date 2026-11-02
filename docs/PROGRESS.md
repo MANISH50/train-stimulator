@@ -140,6 +140,55 @@
 - Crash visuals have not been timed at real FPS on a laptop GPU (headless software rendering runs at about 2 fps).
 - There is no head-on scenario yet: no level puts the player against opposing traffic on the same line.
 
+## 2026-11-03: living world vertical slice (addendum wave 1 + slice)
+
+**What was built**
+- **Research (wave 1, three parallel researchers):**
+  - `docs/research/05-scene-zones.md`: corridor sequences, ghat figures, crops, spans and open data;
+  - `docs/research/07-yards.md`: turnout speeds, route indicators and interlocking;
+  - `docs/IMMERSION_IDEAS.md`: 19 ranked ideas, station life, and the ACP procedure under s.141.
+  - Seven new subagents are defined in `.claude/agents/`.
+- **Scene zones:** zones are data (`content/zones/zones.json`, 12 biomes), and every route has a scene script. Weights blend over 400 m, driving terrain relief, vegetation, buildings, colour grading and ambient sound. Dressing is precomputed per 500 m chunk and streamed into 14 instanced meshes around the camera.
+- **Pilot route "Ghat Express"** (fictional, inspired by Western Ghats crossings):
+  - city junction, suburbs, industrial belt and farmland with a level crossing;
+  - a river girder bridge;
+  - forest, then the ghat with two tunnels and a masonry viaduct;
+  - a hill-station terminus with buffer stops.
+  - The ghat climb of 1 in 60 is a design value, gentler than the cited 1 in 40 of the historic Bhor Ghat.
+- **Junction yard (Nagarpur Jn):**
+  - two numbered platform lines on crossover ladders plus the main line;
+  - 30 km/h turnouts, per the cited 1 in 12 figure;
+  - booked platforms set the route;
+  - a junction-type route indicator lights on the home signal;
+  - conflicting exits never clear together;
+  - turnout overspeed is a recorded violation.
+- **Station life:**
+  - deterministic crowds of about 430 agents (passengers, porters, vendors, staff, police) that queue back from the edge, board, alight, wave, and run for the train without boarding it;
+  - stalls, benches, a departures board, a foot-over-bridge and a stray dog at halts.
+- **Narration:**
+  - Hindi, English and Marathi (draft) arrival and delay announcements through Web Speech, always subtitled;
+  - crew radio;
+  - a journey log of regions and landmarks;
+  - cited "Did you know?" cards.
+- **ACP incident:** the chain vents the brake pipe, the train stops, the crew resets the valve after 45 s (compressed from the cited 15–20 min), and a debrief cites s.141.
+- **Hooks:**
+  - asset files of any type are refused without a licence row;
+  - content edits run the scene and yard tests;
+  - Stop also runs `perf:world`.
+
+**How it was verified**
+- `npm test`: tests cover zone continuity and order, the journey log, yard reachability, the booked route and indicator, no conflicting clears, turnout violations, crowd determinism and queueing, and the ACP flow.
+- `npm run perf:world`: every route, zone type and preset is within its dressing budget; the busiest view is about 1,400 instances and 71k triangles at Medium. The crowd sim takes 3.4 µs per step.
+- `npm run perf:sim`: within budget. It now has a warm-up run, cached train footprints and 30 Hz signalling.
+- e2e: the pilot level shows the region line, a subtitled announcement, the crowd and the ACP debrief, with no console errors.
+- Headless screenshots of every zone, the junction, the station crowd, the tunnel (cab), the viaduct and the hill station.
+
+**What remains**
+- Further waves: more routes per mode, five more narrated incidents, the top-5 immersion picks, and real OSM/DEM corridors.
+- Turnouts are still S-curves without moving switch blades.
+- Marathi announcement text needs native review. Speech voices vary by device.
+- Real-laptop FPS is unmeasured (the headless renderer is software).
+
 ## Resume here (Phase 2)
 1. Pre-departure checklist state machine (brake continuity test: BP 5.0 → 4.0 → Guard vents → 0; research 01 §11).
 2. VCD alerter (60 s + 8 s lamp + 8 s buzzer, then emergency) and Kavach-style warn/brake (+2 / +5 km/h).

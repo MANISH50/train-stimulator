@@ -24,7 +24,9 @@ if (/(^|\/)\.env($|\.)/.test(rel) && !rel.endsWith('.env.example')) {
 for (const [re, what] of SECRET_PATTERNS) {
   if (re.test(text)) block(`Blocked: content for ${rel} looks like a ${what}. Never commit secrets.`);
 }
-if (rel.startsWith('public/assets/')) {
+// Any asset file (image, audio, model, font) anywhere in the repo needs a licence row first.
+const ASSET_EXT = /\.(png|jpe?g|webp|gif|ktx2|glb|gltf|fbx|obj|mp3|ogg|wav|flac|ttf|otf|woff2?)$/i;
+if (!rel.startsWith('test-results/') && (rel.startsWith('public/assets/') || ASSET_EXT.test(rel))) {
   const licences = join(ROOT, 'docs/ASSET_LICENSES.md');
   const listed = existsSync(licences) && readFileSync(licences, 'utf8').includes(basename(rel));
   if (!listed) {

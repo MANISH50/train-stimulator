@@ -12,6 +12,8 @@ const CHECKS = [
   'npm run typecheck --silent',
   'npm run validate:content --silent',
   'npm run perf:sim --silent',
+  // Living world: dressing budgets per zone type and preset, crowd sim cost.
+  'npm run perf:world --silent',
 ];
 for (const cmd of CHECKS) {
   try {

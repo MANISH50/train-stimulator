@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "validate:content": "tsx tools/validate-content.ts",
-    "perf:sim": "tsx tools/perf-sim.ts"
+    "perf:sim": "tsx tools/perf-sim.ts",
+    "perf:world": "tsx tools/perf-world.ts"
   },
   "dependencies": {
     "three": "^0.187.0",

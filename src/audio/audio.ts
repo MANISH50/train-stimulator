@@ -1,6 +1,8 @@
 // Fully synthesized audio (no sample files): traction hum, wheel rumble, brake hiss, air horn,
 // SPAD alarm and crash sounds (impact thump and crunch, metal screech while wreckage slides).
 import type { CrashSim } from '../sim/crash/crashSim';
+import type { AmbientSet } from '../sim/world/zones';
+import { Ambient } from './ambient';
 import type { Sim } from '../sim/sim';
 import { AirHorn } from './airHorn';
 
@@ -21,6 +23,9 @@ export class TrainAudio {
   private noise!: AudioBuffer;
   private lastJoint = 0;
   private lastBp = 5;
+  private ambient: Ambient | null = null;
+  /** >1 inside a tunnel: the train's own rumble echoes back. */
+  private tunnelBoost = 1;
   private alarmOsc: OscillatorNode | null = null;
   private alarmGain: GainNode | null = null;
   private screechGain: GainNode | null = null;
@@ -68,6 +73,7 @@ export class TrainAudio {
     this.hissGain = this.loopNoise('highpass', 3000, 0);
 
     this.horn = new AirHorn(ctx, this.master, this.noise);
+    this.ambient = new Ambient(ctx, this.master, this.noise);
     this.horn.setInCab(this.inCab);
   }
 
@@ -89,6 +95,12 @@ export class TrainAudio {
       o.start(t0);
       o.stop(t0 + 0.4);
     });
+  }
+
+  /** Zone ambience mix and how much of the outside world is audible (0 inside a tunnel). */
+  updateWorld(weights: ReadonlyMap<AmbientSet, number>, outside: number): void {
+    this.ambient?.update(weights, outside);
+    this.tunnelBoost = 1 + (1 - outside) * 1.6;
   }
 
   /** Two-tone SPAD alarm in the cab while `on`. */
@@ -206,7 +218,7 @@ export class TrainAudio {
     const hum = sim.status === 'crashed' ? 0 : 0.02 + load * 0.09;
     this.humGain.gain.setTargetAtTime(hum, t, 0.25);
 
-    this.rumbleGain.gain.setTargetAtTime(Math.min(0.35, v / 40), t, 0.3);
+    this.rumbleGain.gain.setTargetAtTime(Math.min(0.5, (v / 40) * this.tunnelBoost), t, 0.3);
 
     const bp = sim.train.brakes.bp;
     const venting = bp < this.lastBp - 1e-4;

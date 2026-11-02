@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { ZONES } from '../content/catalog';
 import type { CrashSim } from '../sim/crash/crashSim';
+import type { AmbientSet } from '../sim/world/zones';
+import { zoneWeightsAt } from '../sim/world/zones';
+import { CrowdView } from './crowd/crowdView';
+import { buildLandmarks } from './scene/landmarks';
+import { RouteIndicators, buildStationLife } from './scene/stationLife';
+import { ZoneWorld } from './scene/zoneWorld';
 import type { Consist } from '../sim/physics/forces';
 import type { Sim } from '../sim/sim';
 import type { AiTrain } from '../sim/traffic/aiTrain';
@@ -77,6 +84,20 @@ export class GameRenderer {
   crashAngle: CrashAngle = 'orbit';
   private crashOrbit = 0;
   private readonly m4 = new THREE.Matrix4();
+  private zoneWorld: ZoneWorld | null = null;
+  private routeIndicators: RouteIndicators | null = null;
+  private crowdView: CrowdView | null = null;
+  private readonly baseFog = new THREE.Color();
+  private baseSun = 1;
+  private baseHemi = 1;
+  private readonly gradeFog = new THREE.Color();
+  private readonly gradeGround = new THREE.Color();
+  private darkness = 0;
+  /** Ambient-sound weights at the camera and how "outside" it is (0 inside a tunnel). */
+  readonly ambient = new Map<AmbientSet, number>();
+  outside = 1;
+  /** Name of the landmark the camera is at, if any (HUD). */
+  landmarkName: string | undefined;
   private readonly sun = new THREE.DirectionalLight(0xffe2b8, 2.6);
   private readonly hemi = new THREE.HemisphereLight(0xcfe3ff, 0x6b5a3a, 0.9);
   private readonly sky = new Sky();
@@ -125,22 +146,41 @@ export class GameRenderer {
   }
 
   /** Build the world for a (new) level: track, stations, signals and trains. */
+  private playerType!: TrainType;
+
   setSim(sim: Sim, playerType: TrainType): void {
     this.sim = sim;
+    this.playerType = playerType;
     this.disposeWorld();
     const track = sim.track;
     const stations = buildStations(track, sim.setup.route, sim.net);
     this.platformLamps = stations.lamps;
     this.signals = new SignalBank(track, sim.net, sim.setup.route.signals);
-    this.trees = buildTrees(track, this.preset);
+    const route = sim.setup.route;
+    this.zoneWorld = route.scene ? new ZoneWorld(track, route, ZONES, this.preset) : null;
+    this.trees = this.zoneWorld ? new THREE.Group() : buildTrees(track, this.preset);
+    this.routeIndicators = new RouteIndicators(track, sim.net, route);
+    this.crowdView?.dispose();
+    this.crowdView = new CrowdView(this.preset.name);
     this.train = new TrainModel(sim.consist, lookFor(playerType, sim.consist, true));
     this.bufferStops = buildBufferStops(track, sim.setup.route, sim.net);
     this.crashView = null;
     this.preRollS = 0;
     this.crashAngle = 'orbit';
     this.effects.setCrash(null);
+    const zw = this.zoneWorld;
     this.world.add(
-      buildGround(track),
+      ...(zw
+        ? [
+            zw.root,
+            buildLandmarks(track, sim.net, route.scene!.landmarks, (s, side) =>
+              zw.heightAt(s, side),
+            ),
+          ]
+        : [buildGround(track)]),
+      buildStationLife(track, route),
+      this.routeIndicators.root,
+      this.crowdView.root,
       buildTrack(track, sim.net),
       stations.group,
       buildSpeedBoards(track, sim.setup.route, sim.net),
@@ -171,6 +211,12 @@ export class GameRenderer {
       cam.far = 500;
       cam.updateProjectionMatrix();
       this.sun.shadow.bias = -0.0005;
+    }
+    this.crowdView?.setQuality(preset.name);
+    if (treesChanged && this.zoneWorld) {
+      // Dressing density follows the preset: rebuild the zone world.
+      this.setSim(this.sim, this.playerType);
+      return;
     }
     if (treesChanged) {
       this.world.remove(this.trees);
@@ -209,6 +255,9 @@ export class GameRenderer {
     const near = look.fogAbsolute ? look.fogNear : look.fogNear * view;
     const far = look.fogAbsolute ? Math.min(look.fogFar, view) : look.fogFar * view;
     this.scene.fog = new THREE.Fog(look.fogColor, near, far);
+    this.baseFog.set(look.fogColor);
+    this.baseSun = look.sunIntensity;
+    this.baseHemi = look.hemiIntensity;
     this.camera.far = Math.max(far + 300, 800);
     this.camera.updateProjectionMatrix();
     this.sky.visible = look.flatSky === undefined;
@@ -274,6 +323,7 @@ export class GameRenderer {
       this.train.update(track, frontS, 1, (s) => sim.net.offsetAt(sim.playerLineAt(s), s));
     }
     this.syncAi();
+    this.updateWorld(frontS, dt);
     this.signals.update((def) => sim.aspectOf(def));
 
     const loco = this.train.locoObject;
@@ -388,6 +438,52 @@ export class GameRenderer {
       model.dispose();
       this.aiModels.delete(id);
     }
+  }
+
+  /**
+   * Living world: stream zone dressing, tint fog and ground light by zone, darken inside
+   * tunnels, animate crowds and route indicators, and work out the ambient-sound mix.
+   */
+  private updateWorld(frontS: number, dt: number): void {
+    const sim = this.sim;
+    const zw = this.zoneWorld;
+    this.routeIndicators?.update(sim);
+    const camS = this.cameraMode === 'chase' ? frontS - 15 : frontS;
+    this.crowdView?.update(sim.track, sim.crowds, camS, sim.timeS);
+    if (!zw || !sim.setup.route.scene) return;
+    zw.update(camS);
+    const look = WEATHER_LOOKS[sim.weatherId];
+    zw.gradeAt(camS, this.gradeFog, this.gradeGround);
+    const night = look.sunElevationDeg < 0;
+    const tint = night || sim.weatherId === 'fog' ? 0.12 : sim.weatherId === 'rain' ? 0.25 : 0.55;
+    if (this.scene.fog)
+      (this.scene.fog as THREE.Fog).color.copy(this.baseFog).lerp(this.gradeFog, tint);
+    if (!night) this.hemi.groundColor.copy(this.gradeGround).multiplyScalar(0.85);
+    const lm = zw.landmarkAt(camS);
+    this.landmarkName = lm?.name;
+    const inTunnel = lm?.kind === 'tunnel' && camS - lm.fromM > 8 && lm.toM - camS > 8;
+    const target = inTunnel ? 1 : 0;
+    this.darkness += (target - this.darkness) * Math.min(1, dt * 3);
+    this.sun.intensity = this.baseSun * (1 - this.darkness * 0.95);
+    this.hemi.intensity = this.baseHemi * (1 - this.darkness * 0.88);
+    if (this.train.headlight && inTunnel)
+      this.train.headlight.intensity = Math.max(this.train.headlight.intensity, 1.4);
+    this.outside = 1 - this.darkness;
+    this.ambient.clear();
+    for (const e of zoneWeightsAt(sim.setup.route.scene, camS)) {
+      const z = ZONES.get(e.zoneId);
+      if (!z) continue;
+      let w = e.w;
+      if (lm?.kind === 'river-bridge' && z.ambient !== 'river') w *= 0.4;
+      this.ambient.set(z.ambient, (this.ambient.get(z.ambient) ?? 0) + w);
+    }
+    if (lm?.kind === 'river-bridge')
+      this.ambient.set('river', (this.ambient.get('river') ?? 0) + 0.8);
+  }
+
+  /** Instanced dressing currently streamed in (perf overlay). */
+  dressingCount(): number {
+    return this.zoneWorld?.instanceCount() ?? 0;
   }
 
   /** Knock the buffer stop the train hit off its base, following the crash body. */

@@ -26,6 +26,7 @@ Open http://localhost:5173 and press **F1** for the controls. The full key list 
 3. **Suburban Local:** 12-car EMU, four stations 1.5 km apart, with another EMU running ahead.
 4. **Mail / Passenger:** you are routed into the Sitapur loop and held until the Superfast behind you passes.
 5. **Goods Train:** about 4,700 t of freight on a 1 in 150 climb, looped at Ghatpur while a passenger train overtakes.
+6. **Ghat Express (living world):** a fictional 24 km line inspired by Western Ghats crossings. Leave a busy junction through its yard to your booked platform (watch the route indicator and the 30 km/h points), then cross farmland and a river bridge, climb through forest and a ghat with tunnels and a viaduct, and finish at a hill-station terminus. Stations have crowds and trilingual subtitled announcements, and an alarm-chain (ACP) incident tests your response.
 
 Weather: clear, summer haze, monsoon rain (wet rail), winter fog (short signal sighting) or night.
 

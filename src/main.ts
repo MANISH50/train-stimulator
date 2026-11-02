@@ -1,4 +1,8 @@
+import { Announcer, arrivalLines, delayLines } from './audio/announcer';
 import { TrainAudio } from './audio/audio';
+import { ZONES } from './content/catalog';
+import type { SimEvent } from './sim/events';
+import { dominantZone } from './sim/world/zones';
 import { LEVELS, levelById, levelSetup, trainType } from './content/catalog';
 import { Input } from './input/input';
 import { PRESETS, QUALITY_ORDER, detectQuality } from './render/quality';
@@ -39,6 +43,43 @@ const input = new Input(window);
 const audio = new TrainAudio();
 const clock = new FixedClock();
 const hornCodes = new HornCodeDetector();
+const announcer = new Announcer();
+announcer.onSubtitle = (speaker, text) => hud.subtitle(speaker, text);
+
+const RADIO_NAMES = {
+  guard: 'Guard (radio)',
+  alp: 'Assistant loco pilot',
+  control: 'Section control',
+  cab: 'Cab',
+} as const;
+
+/** Voice the sim's announcements and crew radio; everything is also subtitled. */
+function narrate(events: readonly SimEvent[]): void {
+  for (const e of events) {
+    if (e.type === 'ANNOUNCE') {
+      const st = sim.setup.route.stations.find((s) => s.id === e.stationId);
+      const dest = sim.setup.route.stations[sim.setup.route.stations.length - 1];
+      if (!st || !dest) continue;
+      const train = sim.player.label;
+      announcer.say(
+        e.kind === 'arriving'
+          ? arrivalLines(train, dest, st, e.platform)
+          : delayLines(train, e.lateMin ?? 0),
+      );
+    } else if (e.type === 'INCIDENT_SAY' && e.line.speaker !== 'cab') {
+      announcer.radio(RADIO_NAMES[e.line.speaker], e.line.text);
+    }
+  }
+}
+
+/** Region and landmark name for the journey line. */
+function placeName(frontS: number): string {
+  const scene = sim.setup.route.scene;
+  if (!scene) return '';
+  const zone = ZONES.get(dominantZone(scene, frontS) ?? '')?.name ?? '';
+  const lm = renderer.landmarkName;
+  return lm ? `${zone} · ${lm}` : zone;
+}
 
 let prevS = sim.train.s;
 let paused = false;
@@ -107,6 +148,8 @@ function restart(): void {
   replay = null;
   replayAngle = -1;
   audio.updateCrash(null);
+  announcer.stop();
+  hud.resetJourney();
   hud.hideOverlay();
   if (renderer.cameraMode === 'crash') showCamera(renderer.setCamera('chase'));
 }
@@ -231,7 +274,9 @@ function frame(now: number): void {
       sim.step();
     }
     if (live && !replay) crashDt = adv.steps * SIM_DT;
-    hud.handleEvents(sim.drainEvents(), sim);
+    const events = sim.drainEvents();
+    narrate(events);
+    hud.handleEvents(events, sim);
     if (replay) crashDt = stepReplay(replay, dt);
   }
   if (sim.crash && !crashShown) {
@@ -248,6 +293,8 @@ function frame(now: number): void {
   renderer.render(frontS, crashDt);
   frameMs = frameMs * 0.9 + (performance.now() - t0) * 0.1;
   hud.update(sim, frontS, now / 1000);
+  hud.setPlace(placeName(frontS));
+  audio.updateWorld(renderer.ambient, renderer.outside);
   const hornOn = input.isHeld('horn');
   audio.update(sim, hornOn);
   const horn = hornCodes.update(hornOn, now / 1000);

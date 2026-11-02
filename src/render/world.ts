@@ -281,10 +281,34 @@ export function buildBufferStops(track: Track, route: RouteDef, net: RailNetwork
 export function buildSpeedBoards(track: Track, route: RouteDef, net: RailNetwork): THREE.Group {
   const g = new THREE.Group();
   for (const lim of route.speedLimits) {
-    if (lim.kind !== 'temporary') continue;
+    // Line speed itself needs no board; restrictions over part of the route do.
+    if (lim.kind === 'permanent' && lim.fromM <= 0) continue;
     const side = (s: number) => net.offsetAt('UP', s) - LINESIDE_M - 0.4;
     g.add(lineBoard(track, lim.fromM - 30, side(lim.fromM), String(lim.kmh), '#f2c230', '#111'));
     g.add(lineBoard(track, lim.toM, side(lim.toM), 'T', '#f2c230', '#111'));
+  }
+  // Turnout speed boards before each station's platform-line points.
+  for (const loop of route.loops ?? []) {
+    if (loop.platform === undefined) continue;
+    const lim = net.speedLimitKmh(loop.lineId);
+    if (lim === undefined) continue;
+    const at = loop.fromM - 60;
+    if (
+      (route.loops ?? []).some(
+        (l) => l.platform !== undefined && l.fromM < loop.fromM && l.stationId === loop.stationId,
+      )
+    )
+      continue;
+    g.add(
+      lineBoard(
+        track,
+        at,
+        net.offsetAt('UP', at) - LINESIDE_M - 0.4,
+        String(lim),
+        '#f2c230',
+        '#111',
+      ),
+    );
   }
   return g;
 }

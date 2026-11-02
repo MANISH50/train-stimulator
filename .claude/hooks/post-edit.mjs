@@ -35,6 +35,11 @@ if (/^(src|tests)\/.*\.ts$/.test(rel)) {
 if (rel.startsWith('content/') && rel.endsWith('.json')) {
   const v = npx(['tsx', 'tools/validate-content.ts']);
   if (v) problems.push(`Content validation failed:\n${v}`);
+  // Routes, zones and levels: scene transitions, yard routing and conflicting-route tests.
+  if (/^content\/(routes|zones|levels)\//.test(rel)) {
+    const w = npx(['vitest', 'run', 'tests/world.test.ts']);
+    if (w) problems.push(`Scene / yard tests failed:\n${w}`);
+  }
 }
 if (rel.startsWith('public/assets/')) {
   const size = statSync(file).size;

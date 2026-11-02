@@ -165,3 +165,54 @@ test('a crash shows the wreck, the inquiry card, a replay and a restart', async 
   await expect.poll(() => page.evaluate(() => window.__game?.sim.status)).toBe('running');
   expect(errors).toEqual([]);
 });
+
+test('living world: zones, announcement subtitles, crowd and the ACP debrief', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.goto('/');
+  await page.locator('[data-level="ghat-express"]').click();
+  await page.locator('[data-accidents="off"]').click();
+  await page.locator('.menu [data-action="play"]').click();
+  await expect.poll(() => page.evaluate(() => window.__game?.level)).toBe('ghat-express');
+  const place = page.locator('[data-k="place"]');
+  await expect(place).toHaveText('City', { timeout: 30_000 });
+
+  // Approaching the junction: the arrival announcement is subtitled.
+  await page.evaluate(() => {
+    const s = window.__game!.sim;
+    s.train.s = 1200;
+    s.player.frontS = 1200;
+  });
+  await expect(page.locator('[data-k="subtitle"]')).toHaveClass(/show/, { timeout: 30_000 });
+  await expect(page.locator('[data-k="subText"]')).toContainText(/platform|प्लेटफ़ॉर्म|फलाट/);
+  expect(
+    await page.evaluate(() => window.__game!.sim.crowds.stations[0]!.agents.length),
+  ).toBeGreaterThan(200);
+
+  // A region further on.
+  await page.evaluate(() => {
+    const s = window.__game!.sim;
+    s.train.s = 18000;
+    s.player.frontS = 18000;
+  });
+  await expect(place).toContainText('Ghat section', { timeout: 30_000 });
+
+  // ACP just after leaving the junction: stop, wait for the reset, restart -> debrief card.
+  await page.evaluate(() => {
+    const s = window.__game!.sim;
+    s.player.stops.get('NJN')!.done = true;
+    s.train.s = 2990;
+    s.player.frontS = 2990;
+    s.train.v = 6;
+    Object.assign(s.controls, { indepBrake: 0, autoBrake: 0, notch: 0, reverser: 1 });
+    for (let i = 0; i < 60 * 120 && s.incidents[0]!.phase !== 'reset'; i++) s.step();
+    s.controls.emergency = false;
+    s.controls.notch = 4;
+    for (let i = 0; i < 60 * 60 && s.incidents[0]!.phase !== 'done'; i++) s.step();
+  });
+  await expect(page.locator('.card.debrief')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.card.debrief')).toContainText('Section 141');
+  expect(errors).toEqual([]);
+});
