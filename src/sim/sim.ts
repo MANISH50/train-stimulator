@@ -2,7 +2,12 @@ import { SIM_DT } from './clock';
 import { CrashSim, type CrashKind, type CrashSetup, type CrashTrainSpec } from './crash/crashSim';
 import { classify, findContact, lateralAt, type Contact } from './crash/detect';
 import { hashString } from './rng';
-import { AcpIncident } from './station/acp';
+import {
+  createIncident,
+  type Incident,
+  type IncidentWorld,
+  type ViolationKind,
+} from './station/incidents';
 import { Crowds } from './station/crowd';
 import { dominantZone, landmarkAt } from './world/zones';
 import type { SimEvent } from './events';
@@ -34,6 +39,7 @@ import type {
   RakeParams,
   RouteDef,
   SignalDef,
+  SpeedLimit,
   Station,
   StopSpec,
   TrainClass,
@@ -172,7 +178,11 @@ export class Sim {
   private readonly contact: Contact = { s: 0, y: 0, lateralM: 0 };
   /** Station crowds (deterministic; rendered by src/render/crowd). */
   readonly crowds: Crowds;
-  readonly incidents: AcpIncident[] = [];
+  readonly incidents: Incident[] = [];
+  /** Temporary speed restrictions added by incidents (rail fracture caution). */
+  private readonly extraLimits: SpeedLimit[] = [];
+  private readonly iw: IncidentWorld;
+  private readonly calloutHeard = new Map<string, string>();
   /** Rule breaches that do not end the run (scored in the run record). */
   readonly violations: { kind: string; timeS: number; text: string }[] = [];
   /** Controls as the train sees them (an open ACP valve vents the brake pipe). */
@@ -204,12 +214,13 @@ export class Sim {
       this.net,
       hashString(`${setup.seed ?? setup.route.id}:crowd`),
     );
-    for (const spec of setup.incidents ?? []) {
+    this.iw = this.makeIncidentWorld();
+    for (const [i, spec] of (setup.incidents ?? []).entries()) {
       this.incidents.push(
-        new AcpIncident(
+        createIncident(
           spec,
           setup.rake.vehicles,
-          hashString(`${setup.seed ?? ''}:${spec.stationId}`),
+          hashString(`${setup.seed ?? ''}:${spec.kind}:${i}`),
         ),
       );
     }
@@ -352,6 +363,18 @@ export class Sim {
     return st.mainPlatform;
   }
 
+  /** Speed restrictions starting ahead within rangeM (route data and incident orders). */
+  restrictionsAhead(rangeM: number): { distM: number; kmh: number }[] {
+    const out: { distM: number; kmh: number }[] = [];
+    for (const lims of [this.setup.route.speedLimits, this.extraLimits]) {
+      for (const lim of lims) {
+        const d = lim.fromM - this.train.s;
+        if (d > 0 && d < rangeM) out.push({ distM: d, kmh: lim.kmh });
+      }
+    }
+    return out;
+  }
+
   /** Why the player's train is being held at a station, if it is. */
   playerHold(): HoldReason | undefined {
     return this.dispatcher.holdReason(this.player.id);
@@ -384,6 +407,9 @@ export class Sim {
       ? this.consist.loco.maxSpeedKmh
       : ((m as AiTrain).consist.loco.maxSpeedKmh ?? 100);
     for (const lim of this.setup.route.speedLimits) {
+      if (lim.fromM < hi && lim.toM > lo) limit = Math.min(limit, lim.kmh);
+    }
+    for (const lim of this.extraLimits) {
       if (lim.fromM < hi && lim.toM > lo) limit = Math.min(limit, lim.kmh);
     }
     for (const s of [front, (front + rear) / 2, rear]) {
@@ -743,25 +769,67 @@ export class Sim {
     }
   }
 
+  /** The assistant loco pilot calls out the next signal as it comes into view or changes. */
+  private checkCallouts(): void {
+    const next = this.nextSignalView();
+    if (!next || next.distM > 800) return;
+    const key = next.visible ? next.aspect : 'unseen';
+    if (this.calloutHeard.get(next.def.id) === key) return;
+    this.calloutHeard.set(next.def.id, key);
+    this.emit({
+      type: 'CALLOUT',
+      timeS: this.timeS,
+      signalId: next.def.id,
+      label: next.def.label,
+      aspect: next.aspect,
+      visible: next.visible,
+    });
+  }
+
   private checkIncidents(): void {
-    for (const inc of this.incidents) {
-      const st = this.setup.route.stations.find((x) => x.id === inc.spec.stationId);
-      const stop = this.player.stops.get(inc.spec.stationId);
-      if (!st) continue;
-      const departed = stop && !stop.done ? -1 : this.train.s - stopMarkFor(st, 1);
-      inc.update(
-        this.timeS,
-        departed,
-        this.train.s,
-        Math.abs(this.train.v),
-        this.controls.notch,
-        (line) => this.emit({ type: 'INCIDENT_SAY', timeS: this.timeS, line }),
-        (debrief) => {
-          for (const v of debrief.violations) this.violation('acp-traction', v);
-          this.emit({ type: 'INCIDENT_DEBRIEF', timeS: this.timeS, debrief });
-        },
-      );
-    }
+    const w = this.iw;
+    w.timeS = this.timeS;
+    w.frontS = this.train.s;
+    w.speedMs = Math.abs(this.train.v);
+    w.notch = this.controls.notch;
+    w.horn = !!this.controls.horn;
+    for (const inc of this.incidents) if (!inc.done) inc.update(w);
+  }
+
+  private makeIncidentWorld(): IncidentWorld {
+    const route = this.setup.route;
+    const station = (id: string) => route.stations.find((x) => x.id === id);
+    const signal = (id: string) => route.signals.find((x) => x.id === id);
+    return {
+      timeS: 0,
+      frontS: 0,
+      speedMs: 0,
+      notch: 0,
+      horn: false,
+      trainLengthM: this.consist.lengthM,
+      departedM: (id) => {
+        const st = station(id);
+        const stop = this.player.stops.get(id);
+        if (!st || (stop && !stop.done)) return -1;
+        return this.train.s - stopMarkFor(st, 1);
+      },
+      stop: (id) => this.player.stops.get(id),
+      stationName: (id) => station(id)?.name ?? id,
+      stopMarkM: (id) => {
+        const st = station(id);
+        return st ? stopMarkFor(st, 1) : 0;
+      },
+      addStop: (id, dwellS) => {
+        if (!this.player.stops.has(id)) this.player.stops.set(id, { dwellS, done: false });
+      },
+      addLimit: (fromM, toM, kmh) => this.extraLimits.push({ fromM, toM, kmh, kind: 'temporary' }),
+      surgeCrowd: (id, n) => this.crowds.surge(id, n),
+      signalHoldUntilS: (id) => signal(id)?.holdUntilS,
+      signalChainage: (id) => signal(id)?.chainageM,
+      say: (line) => this.emit({ type: 'INCIDENT_SAY', timeS: this.timeS, line }),
+      debrief: (debrief) => this.emit({ type: 'INCIDENT_DEBRIEF', timeS: this.timeS, debrief }),
+      violation: (kind, text) => this.violation(kind, text),
+    };
   }
 
   /** Journey log: the landscape zone and landmarks the train front is passing. */
@@ -804,7 +872,7 @@ export class Sim {
     }
   }
 
-  private violation(kind: 'turnout-speed' | 'acp-traction', text: string): void {
+  private violation(kind: ViolationKind, text: string): void {
     this.violations.push({ kind, timeS: this.timeS, text });
     this.emit({ type: 'VIOLATION', timeS: this.timeS, kind, text });
   }
@@ -876,6 +944,7 @@ export class Sim {
   }
 
   private checkNotifications(): void {
+    this.checkCallouts();
     // Signal ahead clearing from danger.
     const next = this.nextSignalView();
     if (next) {

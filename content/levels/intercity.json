@@ -49,5 +49,20 @@
       "stops": []
     }
   ],
-  "defaultWeather": "clear"
+  "defaultWeather": "clear",
+  "incidents": [
+    {
+      "kind": "medical",
+      "stationId": "RMP",
+      "atS": 2400,
+      "dwellS": 60
+    },
+    {
+      "kind": "fracture",
+      "reportAtS": 7600,
+      "fromM": 10300,
+      "toM": 10450,
+      "kmh": 30
+    }
+  ]
 }

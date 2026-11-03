@@ -35,6 +35,14 @@ export function autopilot(sim: Sim, opts: DriverOptions = {}): void {
   const curve =
     authority === Infinity ? Infinity : Math.sqrt(2 * planDecel * Math.max(0, authority));
   let target = Math.min(limit, curve);
+  // Brake in time for speed restrictions ahead (permanent, temporary or ordered by control).
+  if (opts.speedKmh === undefined) {
+    for (const r of sim.restrictionsAhead(3500)) {
+      const vr = (r.kmh - 4) / 3.6;
+      const d = r.distM - Math.max(0, v) * lagS * 0.5;
+      target = Math.min(target, Math.sqrt(vr * vr + 2 * planDecel * Math.max(0, d)));
+    }
+  }
   // Slow down in time for loop points ahead (their limit applies from the turnout).
   for (const loop of sim.net.loops) {
     if (sim.player.loopRoutes.get(loop.stationId) !== loop.lineId || loop.fromM <= s) continue;

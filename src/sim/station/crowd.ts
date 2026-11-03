@@ -101,6 +101,13 @@ export class Crowds {
     }
   }
 
+  /** A crowd builds up (e.g. a long delay): extra passengers appear on the platforms. */
+  surge(stationId: string, n: number): void {
+    const c = this.stations.find((x) => x.station.id === stationId);
+    if (!c) return;
+    for (let i = 0; i < n; i++) c.agents.push(this.spawn(c.slabs, 'passenger'));
+  }
+
   /** Call every sim step; the crowd itself updates at CROWD_HZ. */
   step(dt: number, movers: readonly Mover[], playerS: number): void {
     this.acc += dt;

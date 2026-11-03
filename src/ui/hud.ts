@@ -5,7 +5,7 @@ import { BP_CHARGED } from '../sim/physics/brakes';
 import type { Sim } from '../sim/sim';
 import { FACTS, ZONES } from '../content/catalog';
 import { ASPECT_MEANING } from '../sim/signalling/signal';
-import type { AcpDebrief } from '../sim/station/acp';
+import type { Debrief } from '../sim/station/incidents';
 import './hud.css';
 
 /** Sim clock starts at a fictional 06:00 departure. */
@@ -153,6 +153,9 @@ export class Hud {
         this.set('sigMeaning', `${aspect.replace('_', ' ')} — ${ASPECT_MEANING[aspect]}`);
         l1.className = `lamp ${aspect === 'RED' ? 'r' : aspect === 'GREEN' ? 'g' : 'y'}`;
         l2.className = `lamp ${aspect === 'DOUBLE_YELLOW' ? 'y' : 'off'}`;
+        // Letters for the colour-blind aid (shown by CSS when the aid is on).
+        l1.dataset['letter'] = aspect === 'RED' ? 'R' : aspect === 'GREEN' ? 'G' : 'Y';
+        l2.dataset['letter'] = aspect === 'DOUBLE_YELLOW' ? 'Y' : '';
       } else {
         // Fog: like a fog safety device, the distance is known but not the colour.
         this.set('sigMeaning', 'Not in sight yet — be ready to stop');
@@ -335,7 +338,7 @@ export class Hud {
           break;
         case 'INCIDENT_DEBRIEF':
           this.showDebrief(e.debrief);
-          this.fact('acp');
+          this.fact(e.debrief.title.includes('alarm chain') ? 'acp' : 'incident');
           break;
         default:
           break;
@@ -430,6 +433,11 @@ export class Hud {
     );
   }
 
+  /** Colour-blind aid: a letter (R / Y / G) on the signal lamps. */
+  setColourAid(on: boolean): void {
+    this.root.classList.toggle('aid', on);
+  }
+
   /** Name of the region / landmark the train is in, for the journey line. */
   setPlace(text: string): void {
     this.set('place', text);
@@ -461,13 +469,13 @@ export class Hud {
     );
   }
 
-  private showDebrief(d: AcpDebrief): void {
+  private showDebrief(d: Debrief): void {
     const o = this.el['overlay']!;
     o.innerHTML = '';
     const card = document.createElement('div');
     card.className = 'card debrief';
     const h = document.createElement('h2');
-    h.textContent = 'Incident debrief — alarm chain pulling';
+    h.textContent = d.title;
     const rows: [string, string][] = [
       ['What happened', d.what],
       ['Your response', d.yourResponse],

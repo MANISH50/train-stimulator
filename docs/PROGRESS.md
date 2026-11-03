@@ -189,6 +189,31 @@
 - Marathi announcement text needs native review. Speech voices vary by device.
 - Real-laptop FPS is unmeasured (the headless renderer is software).
 
+## 2026-11-04: living world wave 2 — six incident scenarios, cab call-outs, more scenery
+
+**What was built**
+- **Incident framework** (`src/sim/station/incidents.ts`): six narrated, non-graphic scenarios, each ending in a debrief card (what happened, your response, which rule applied):
+  1. alarm-chain pulling (Ghat Express);
+  2. a medical emergency, where the guard asks for an unscheduled stop at Rampur (Intercity);
+  3. cattle on the line at a crossing, which wants the horn and a slow approach (Ghat Express, with cattle drawn on the track);
+  4. a rail fracture ahead, where control orders a caution speed (Intercity);
+  5. a home signal held at danger while a crowd builds on the platform (Training);
+  6. a missing child announced at a halt (Ghat Express).
+- Research for each procedure is in `docs/research/08-incidents.md`. Where the sources found no rule, the debriefs say so: the cattle speed (40 km/h), the fracture caution (30 km/h) and the 45 s ACP reset are game values, and a train is not held for a missing child.
+- **Cab life:** the assistant loco pilot calls out each signal as it comes into view or changes (spoken and subtitled; V toggles). The horn is now readable by the sim.
+- **Accessibility:** an optional colour-blind aid puts R / Y / G letters on the HUD signal lamps (menu setting). Subtitles already label the speaker.
+- **Scenery:** Suburban and Mail now have 4 distinct zones, with river bridges. Every train mode now has a route with at least four distinct zones.
+- The rule-abiding test driver now brakes for speed restrictions ahead.
+
+**How it was verified**
+- `npm test`: tests cover every scenario done correctly and badly, the unscheduled stop, the ordered limit, the crowd surge, the call-outs, and the zone counts.
+- Headless screenshots: the cattle and crossing queue, the ALP subtitle and the lamp letter.
+
+**What remains**
+- Incidents on more levels, and the remaining ideas in docs/IMMERSION_IDEAS.md (career mode, sign-on, festivals, photo mode).
+- A platform-change scenario needs the dispatcher to re-route late.
+- Confirm Railways Act s.147 and s.154 on India Code, and the General Rule numbers in 08, before shipping rule text to players.
+
 ## Resume here (Phase 2)
 1. Pre-departure checklist state machine (brake continuity test: BP 5.0 → 4.0 → Guard vents → 0; research 01 §11).
 2. VCD alerter (60 s + 8 s lamp + 8 s buzzer, then emergency) and Kavach-style warn/brake (+2 / +5 km/h).

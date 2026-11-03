@@ -24,6 +24,7 @@ The game opens on a start menu: pick the journey, starting camera and graphics, 
 | P | Pause |
 | Esc | Open the menu (Esc again resumes) |
 | K | Show / hide the key hints bar |
+| V | Assistant loco pilot signal call-outs on / off |
 | Enter | Restart after a failed or finished run |
 
 **First drive:** hold `;` to release the loco brake, press W a few times, watch the next-signal panel, brake with `]` well before red signals and the platform STOP mark.

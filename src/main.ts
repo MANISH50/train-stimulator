@@ -51,6 +51,16 @@ const RADIO_NAMES = {
   alp: 'Assistant loco pilot',
   control: 'Section control',
   cab: 'Cab',
+  station: 'Station announcement',
+} as const;
+
+/** ALP call-outs of signals ahead (V toggles). */
+let callouts = true;
+const ASPECT_WORDS = {
+  RED: 'red',
+  YELLOW: 'yellow',
+  DOUBLE_YELLOW: 'double yellow',
+  GREEN: 'green',
 } as const;
 
 /** Voice the sim's announcements and crew radio; everything is also subtitled. */
@@ -66,8 +76,15 @@ function narrate(events: readonly SimEvent[]): void {
           ? arrivalLines(train, dest, st, e.platform)
           : delayLines(train, e.lateMin ?? 0),
       );
+    } else if (e.type === 'INCIDENT_SAY' && e.line.speaker === 'station') {
+      announcer.say([
+        { lang: e.line.lang ?? 'en-IN', speaker: RADIO_NAMES.station, text: e.line.text },
+      ]);
     } else if (e.type === 'INCIDENT_SAY' && e.line.speaker !== 'cab') {
       announcer.radio(RADIO_NAMES[e.line.speaker], e.line.text);
+    } else if (e.type === 'CALLOUT' && callouts && !announcer.busy) {
+      const what = e.visible ? ASPECT_WORDS[e.aspect] : 'not in sight yet';
+      announcer.radio(RADIO_NAMES.alp, `${e.label}, ${what}`);
     }
   }
 }
@@ -124,6 +141,7 @@ function closeMenu(): void {
 
 menu.onStart((choice, restartRequested) => {
   audio.start();
+  hud.setColourAid(choice.colourAid);
   if (choice.quality !== renderer.preset.name) renderer.applyPreset(PRESETS[choice.quality]);
   const changed =
     choice.levelId !== level.id || choice.weather !== weather || choice.accidents !== accidents;
@@ -236,6 +254,10 @@ function handleActions(): void {
       case 'keys':
         hud.toggleKeyHints();
         break;
+      case 'callouts':
+        callouts = !callouts;
+        hud.toast(`ALP signal call-outs: ${callouts ? 'on' : 'off'}`, 'info');
+        break;
       case 'help':
         hud.toggleHelp();
         break;
@@ -260,6 +282,7 @@ function frame(now: number): void {
   handleActions();
   const frozen = paused || inMenu;
   input.updateHandles(sim.controls, sim.consist.loco.notches, frozen ? 0 : dt);
+  sim.controls.horn = input.isHeld('horn');
   if (inMenu) renderer.orbit(dt);
 
   let alpha = 1;

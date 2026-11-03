@@ -14,6 +14,8 @@ export interface MenuChoice {
   weather: WeatherId;
   /** Realistic consequences: SPADs and overspeed can end in a collision or derailment. */
   accidents: boolean;
+  /** Colour-blind aid: letters on the HUD signal lamps. */
+  colourAid: boolean;
 }
 
 const CAMERAS: { id: CameraMode; label: string }[] = [
@@ -59,6 +61,7 @@ export class StartMenu {
       quality,
       weather: first.defaultWeather,
       accidents: true,
+      colourAid: false,
     };
     this.el = document.createElement('div');
     this.el.className = 'menu';
@@ -123,6 +126,13 @@ export class StartMenu {
             </div>
           </div>
           <div>
+            <h3>Colour-blind aid</h3>
+            <div class="seg">
+              <button data-aid="off" class="${c.colourAid ? '' : 'on'}">Off</button>
+              <button data-aid="on" class="${c.colourAid ? 'on' : ''}" title="Shows R / Y / G on the signal lamps">Letters on signals</button>
+            </div>
+          </div>
+          <div>
             <h3>Graphics</h3>
             <div class="seg">${QUALITIES.map((o) => `<button data-quality="${o.id}" class="${o.id === c.quality ? 'on' : ''}">${o.label}</button>`).join('')}</div>
           </div>
@@ -161,6 +171,12 @@ export class StartMenu {
     this.el.querySelectorAll<HTMLButtonElement>('[data-accidents]').forEach((b) =>
       b.addEventListener('click', () => {
         this.choice.accidents = b.dataset['accidents'] === 'on';
+        this.render();
+      }),
+    );
+    this.el.querySelectorAll<HTMLButtonElement>('[data-aid]').forEach((b) =>
+      b.addEventListener('click', () => {
+        this.choice.colourAid = b.dataset['aid'] === 'on';
         this.render();
       }),
     );

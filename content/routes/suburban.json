@@ -309,19 +309,36 @@
       {
         "zoneId": "city",
         "fromM": 0,
-        "toM": 2500
+        "toM": 1400
       },
       {
         "zoneId": "suburb",
-        "fromM": 2500,
-        "toM": 5200
+        "fromM": 1400,
+        "toM": 2700
+      },
+      {
+        "zoneId": "industrial",
+        "fromM": 2700,
+        "toM": 3250
+      },
+      {
+        "zoneId": "river",
+        "fromM": 3250,
+        "toM": 4150
       },
       {
         "zoneId": "city",
-        "fromM": 5200,
+        "fromM": 4150,
         "toM": 6085
       }
     ],
-    "landmarks": []
+    "landmarks": [
+      {
+        "kind": "river-bridge",
+        "fromM": 3500,
+        "toM": 3700,
+        "name": "Canal bridge"
+      }
+    ]
   }
 }

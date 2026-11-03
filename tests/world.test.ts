@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LEVELS, ROUTES, ZONES, levelById, levelSetup } from '../src/content/catalog';
 import type { SimEvent } from '../src/sim/events';
 import { Sim } from '../src/sim/sim';
+import type { AcpIncident } from '../src/sim/station/acp';
 import { QUEUE_BACK_M } from '../src/sim/station/crowd';
 import { FOULING_M } from '../src/sim/traffic/mover';
 import { RailNetwork } from '../src/sim/track/network';
@@ -18,6 +19,13 @@ describe('scene zones', () => {
     for (const r of ROUTES.values()) {
       expect(r.scene, r.id).toBeDefined();
       for (const z of r.scene!.zones) expect(ZONES.has(z.zoneId), z.zoneId).toBe(true);
+    }
+  });
+
+  it('every train mode has a route with at least four distinct zones', () => {
+    for (const id of ['intercity', 'suburban', 'mail', 'goods', 'ghat-express']) {
+      const distinct = new Set(ROUTES.get(id)!.scene!.zones.map((z) => z.zoneId));
+      expect(distinct.size, id).toBeGreaterThanOrEqual(4);
     }
   });
 
@@ -157,7 +165,8 @@ describe('ACP incident', () => {
     const debrief = events.find((e) => e.type === 'INCIDENT_DEBRIEF');
     expect(debrief).toBeDefined();
     if (debrief?.type === 'INCIDENT_DEBRIEF') expect(debrief.debrief.rule).toContain('Section 141');
-    expect(sim.incidents[0]!.stoppedAtS).toBeGreaterThan(sim.incidents[0]!.pulledAtS);
+    const acp = sim.incidents[0] as AcpIncident;
+    expect(acp.stoppedAtS).toBeGreaterThan(acp.pulledAtS);
   });
 
   it('every level still loads', () => {

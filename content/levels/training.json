@@ -34,5 +34,13 @@
       "stops": []
     }
   ],
-  "defaultWeather": "clear"
+  "defaultWeather": "clear",
+  "incidents": [
+    {
+      "kind": "signal-hold",
+      "signalId": "PRS-H",
+      "stationId": "PRS",
+      "surge": 50
+    }
+  ]
 }

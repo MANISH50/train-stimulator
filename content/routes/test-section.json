@@ -123,7 +123,7 @@
       "kind": "home",
       "chainageM": 3100,
       "stationId": "PRS",
-      "holdUntilS": 150
+      "holdUntilS": 200
     },
     {
       "id": "DA2",

@@ -26,11 +26,13 @@ Open http://localhost:5173 and press **F1** for the controls. The full key list 
 3. **Suburban Local:** 12-car EMU, four stations 1.5 km apart, with another EMU running ahead.
 4. **Mail / Passenger:** you are routed into the Sitapur loop and held until the Superfast behind you passes.
 5. **Goods Train:** about 4,700 t of freight on a 1 in 150 climb, looped at Ghatpur while a passenger train overtakes.
-6. **Ghat Express (living world):** a fictional 24 km line inspired by Western Ghats crossings. Leave a busy junction through its yard to your booked platform (watch the route indicator and the 30 km/h points), then cross farmland and a river bridge, climb through forest and a ghat with tunnels and a viaduct, and finish at a hill-station terminus. Stations have crowds and trilingual subtitled announcements, and an alarm-chain (ACP) incident tests your response.
+6. **Ghat Express (living world, with scenarios):** a fictional 24 km line inspired by Western Ghats crossings. Leave a busy junction through its yard to your booked platform (watch the route indicator and the 30 km/h points), then cross farmland and a river bridge, climb through forest and a ghat with tunnels and a viaduct, and finish at a hill-station terminus. Stations have crowds and trilingual subtitled announcements, and an alarm-chain (ACP) incident tests your response.
 
 Weather: clear, summer haze, monsoon rain (wet rail), winter fog (short signal sighting) or night.
 
 **Accidents (on by default, toggle in the menu):** pass a red signal and you keep going into whatever is ahead. You may rear-end the train in front or be hit at the points by a passing express. Overspeed through loop points derails you, and the Suburban terminus has buffer stops. Crashes are simulated vehicle by vehicle and shown in slow motion, followed by an accident inquiry. Press R to replay from another angle.
+
+**Scenarios (each ends with a short debrief):** an alarm-chain pull, a medical emergency (unscheduled stop), cattle on the line (horn and slow down), a rail fracture ahead (caution speed), a signal held at danger with a crowd building, and a missing-child announcement. Press **V** to turn the assistant loco pilot's signal call-outs on or off. The menu has an optional colour-blind aid.
 
 ## Phase 1: the Training Ground
 - A fictional 4.2 km section with curves and gradients, a temporary 50 km/h restriction, a distant signal, a home signal, and the Prashikshan Nagar platform.

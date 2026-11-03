@@ -299,11 +299,40 @@ export const LevelSchema = source.extend({
   ),
   incidents: z
     .array(
-      z.object({
-        kind: z.literal('acp'),
-        stationId: z.string(),
-        afterDepartM: positive,
-      }),
+      z.discriminatedUnion('kind', [
+        z.object({ kind: z.literal('acp'), stationId: z.string(), afterDepartM: positive }),
+        z.object({
+          kind: z.literal('medical'),
+          stationId: z.string(),
+          atS: z.number().min(0),
+          dwellS: positive,
+        }),
+        z.object({
+          kind: z.literal('wildlife'),
+          atS: z.number().min(0),
+          warnM: positive,
+          checkM: positive,
+          slowKmh: positive,
+        }),
+        z.object({
+          kind: z.literal('fracture'),
+          reportAtS: z.number().min(0),
+          fromM: z.number().min(0),
+          toM: z.number().min(0),
+          kmh: positive,
+        }),
+        z.object({
+          kind: z.literal('signal-hold'),
+          signalId: z.string(),
+          stationId: z.string(),
+          surge: z.number().int().min(0),
+        }),
+        z.object({
+          kind: z.literal('missing-child'),
+          stationId: z.string(),
+          foundAfterS: positive,
+        }),
+      ]),
     )
     .optional(),
   defaultWeather: z.enum(['clear', 'haze', 'rain', 'fog', 'night']),

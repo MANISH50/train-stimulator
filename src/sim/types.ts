@@ -171,13 +171,23 @@ export interface LevelDef {
   defaultWeather: WeatherId;
 }
 
-/** ACP: a passenger pulls the alarm chain soon after the train leaves a station. */
-export interface IncidentSpec {
-  kind: 'acp';
-  stationId: string;
-  /** Distance the train front has run past the stop mark when the chain is pulled (m). */
-  afterDepartM: number;
-}
+/**
+ * Scripted, narrated incidents (see src/sim/station/incidents.ts). Chainages are route
+ * chainage of the train front.
+ */
+export type IncidentSpec =
+  /** A passenger pulls the alarm chain soon after the train leaves a station. */
+  | { kind: 'acp'; stationId: string; afterDepartM: number }
+  /** A passenger is unwell: the guard asks for an unscheduled stop at a station. */
+  | { kind: 'medical'; stationId: string; atS: number; dwellS: number }
+  /** Cattle on the line near a crossing: sound the horn and slow to slowKmh by checkM. */
+  | { kind: 'wildlife'; atS: number; warnM: number; checkM: number; slowKmh: number }
+  /** A rail fracture is reported: caution speed over [fromM, toM]. */
+  | { kind: 'fracture'; reportAtS: number; fromM: number; toM: number; kmh: number }
+  /** A home signal held at danger while a crowd builds on the platform. */
+  | { kind: 'signal-hold'; signalId: string; stationId: string; surge: number }
+  /** A child is missing on the platform; the child is found foundAfterS after you arrive. */
+  | { kind: 'missing-child'; stationId: string; foundAfterS: number };
 
 export type TrackSegment =
   | { type: 'straight'; lengthM: number }
@@ -244,4 +254,6 @@ export interface Controls {
   /** Independent (loco) brake handle, 0..1. */
   indepBrake: number;
   emergency: boolean;
+  /** Horn held (the sim only reads it for scenarios such as animals near the line). */
+  horn?: boolean;
 }

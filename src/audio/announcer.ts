@@ -74,6 +74,11 @@ export class Announcer {
     if (!this.speaking) this.next();
   }
 
+  /** True while something is being spoken or queued. */
+  get busy(): boolean {
+    return this.speaking || this.queue.length > 0;
+  }
+
   /** Cab radio / crew lines: English, spoken at a slightly brisker rate. */
   radio(speaker: string, text: string): void {
     this.say([{ lang: 'en-IN', speaker, text }]);

@@ -284,24 +284,36 @@
       {
         "zoneId": "suburb",
         "fromM": 0,
-        "toM": 1800
+        "toM": 1500
       },
       {
         "zoneId": "farmland",
-        "fromM": 1800,
-        "toM": 5400
+        "fromM": 1500,
+        "toM": 4200
+      },
+      {
+        "zoneId": "river",
+        "fromM": 4200,
+        "toM": 5300
       },
       {
         "zoneId": "forest",
-        "fromM": 5400,
-        "toM": 6200
+        "fromM": 5300,
+        "toM": 6400
       },
       {
         "zoneId": "farmland",
-        "fromM": 6200,
+        "fromM": 6400,
         "toM": 10000
       }
     ],
-    "landmarks": []
+    "landmarks": [
+      {
+        "kind": "river-bridge",
+        "fromM": 4500,
+        "toM": 4780,
+        "name": "Sarju river"
+      }
+    ]
   }
 }

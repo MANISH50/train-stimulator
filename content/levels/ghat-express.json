@@ -9,9 +9,21 @@
     "trainTypeId": "mail-express",
     "startS": 200,
     "stops": [
-      { "stationId": "NJN", "dueS": 150, "dwellS": 40, "platform": 1 },
-      { "stationId": "KHP", "dueS": 600, "dwellS": 20 },
-      { "stationId": "MGH", "dueS": 1500 }
+      {
+        "stationId": "NJN",
+        "dueS": 150,
+        "dwellS": 40,
+        "platform": 1
+      },
+      {
+        "stationId": "KHP",
+        "dueS": 600,
+        "dwellS": 20
+      },
+      {
+        "stationId": "MGH",
+        "dueS": 1500
+      }
     ]
   },
   "traffic": [
@@ -21,7 +33,13 @@
       "dir": 1,
       "spawnAtS": 0,
       "spawnS": 1500,
-      "stops": [{ "stationId": "NJN", "dwellS": 140, "platform": 2 }]
+      "stops": [
+        {
+          "stationId": "NJN",
+          "dwellS": 140,
+          "platform": 2
+        }
+      ]
     },
     {
       "id": "dn-goods",
@@ -40,6 +58,24 @@
       "stops": []
     }
   ],
-  "incidents": [{ "kind": "acp", "stationId": "NJN", "afterDepartM": 180 }],
+  "incidents": [
+    {
+      "kind": "acp",
+      "stationId": "NJN",
+      "afterDepartM": 180
+    },
+    {
+      "kind": "wildlife",
+      "atS": 7406,
+      "warnM": 900,
+      "checkM": 150,
+      "slowKmh": 40
+    },
+    {
+      "kind": "missing-child",
+      "stationId": "KHP",
+      "foundAfterS": 14
+    }
+  ],
   "defaultWeather": "clear"
 }

@@ -18,6 +18,7 @@ export type Action =
   | 'quality'
   | 'help'
   | 'keys'
+  | 'callouts'
   | 'pause'
   | 'menu'
   | 'restart';
@@ -41,6 +42,7 @@ export const DEFAULT_KEYMAP: Record<Action, string[]> = {
   quality: ['KeyQ'],
   help: ['F1', 'Slash'],
   keys: ['KeyK'],
+  callouts: ['KeyV'],
   pause: ['KeyP'],
   menu: ['Escape'],
   restart: ['Enter'],
@@ -65,6 +67,7 @@ export const ACTION_LABELS: Record<Action, string> = {
   quality: 'Cycle quality preset',
   help: 'Show / hide controls',
   keys: 'Show / hide the key hints bar',
+  callouts: 'Assistant loco pilot signal call-outs on / off',
   pause: 'Pause',
   menu: 'Open the menu',
   restart: 'Restart run',

@@ -6,6 +6,7 @@ import type { AmbientSet } from '../sim/world/zones';
 import { zoneWeightsAt } from '../sim/world/zones';
 import { CrowdView } from './crowd/crowdView';
 import { buildLandmarks } from './scene/landmarks';
+import { Hazards } from './scene/hazards';
 import { RouteIndicators, buildStationLife } from './scene/stationLife';
 import { ZoneWorld } from './scene/zoneWorld';
 import type { Consist } from '../sim/physics/forces';
@@ -86,6 +87,7 @@ export class GameRenderer {
   private readonly m4 = new THREE.Matrix4();
   private zoneWorld: ZoneWorld | null = null;
   private routeIndicators: RouteIndicators | null = null;
+  private hazards: Hazards | null = null;
   private crowdView: CrowdView | null = null;
   private readonly baseFog = new THREE.Color();
   private baseSun = 1;
@@ -160,6 +162,7 @@ export class GameRenderer {
     this.zoneWorld = route.scene ? new ZoneWorld(track, route, ZONES, this.preset) : null;
     this.trees = this.zoneWorld ? new THREE.Group() : buildTrees(track, this.preset);
     this.routeIndicators = new RouteIndicators(track, sim.net, route);
+    this.hazards = new Hazards(track);
     this.crowdView?.dispose();
     this.crowdView = new CrowdView(this.preset.name);
     this.train = new TrainModel(sim.consist, lookFor(playerType, sim.consist, true));
@@ -180,6 +183,7 @@ export class GameRenderer {
         : [buildGround(track)]),
       buildStationLife(track, route),
       this.routeIndicators.root,
+      this.hazards.root,
       this.crowdView.root,
       buildTrack(track, sim.net),
       stations.group,
@@ -448,6 +452,7 @@ export class GameRenderer {
     const sim = this.sim;
     const zw = this.zoneWorld;
     this.routeIndicators?.update(sim);
+    this.hazards?.update(sim);
     const camS = this.cameraMode === 'chase' ? frontS - 15 : frontS;
     this.crowdView?.update(sim.track, sim.crowds, camS, sim.timeS);
     if (!zw || !sim.setup.route.scene) return;
